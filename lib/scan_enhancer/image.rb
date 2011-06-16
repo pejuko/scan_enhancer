@@ -23,10 +23,10 @@ module ScanEnhancer
     # print some image information
     def info
       puts <<-ENDINFO
-      DPI: #{data.density}
-      Width: #{data.width}
-      Height: #{data.height}
-      Depth: #{data.depth}
+      DPI: #{@data.density}
+      Width: #{@data.columns}
+      Height: #{@data.rows}
+      Depth: #{@data.depth}
       ENDINFO
     end
 

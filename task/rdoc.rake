@@ -7,6 +7,8 @@
 # Copyright:: Copyright (c) 2011 Petr Kovář
 # License::   Distributes under the same terms as Ruby
 
+begin
+
 require 'rake/rdoctask'
 
 desc "Generate RDoc documentation"
@@ -18,3 +20,5 @@ Rake::RDocTask.new(:rdoc) do |t|
   t.options = %w(-a  -d -x spec/ -x test/ -U -S -N -p -w 2)
 end
 
+rescue LoadError
+end

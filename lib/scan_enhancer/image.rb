@@ -15,8 +15,19 @@ module ScanEnhancer
 
     def initialize img
       @data = img
+      info
       @pages = []
       @attrib = {}
+    end
+
+    # print some image information
+    def info
+      puts <<-ENDINFO
+      DPI: #{data.density}
+      Width: #{data.width}
+      Height: #{data.height}
+      Depth: #{data.depth}
+      ENDINFO
     end
 
     # Analyse page layout and return layout information

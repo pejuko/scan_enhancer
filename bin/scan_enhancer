@@ -1,0 +1,49 @@
+#! /usr/bin/env ruby
+# -*- coding: utf-8 -*-
+# vi: fenc=utf-8:expandtab:ts=2:sw=2:sts=2
+# 
+# CLI interface for ScanEnhancer
+#
+# Author::    Petr Kovar (mailto:pejuko@gmail.com)
+# Copyright:: Copyright (c) 2011 Petr Kovář
+# License::   Distributes under the same terms as Ruby
+$KCODE="UTF8" if RUBY_VERSION < "1.9"
+
+$:.unshift File.expand_path(File.join(File.dirname(__FILE__), "../"))
+
+
+require 'rubygems'
+require 'lib/scan_enhancer'
+require 'getoptlong'
+
+
+def print_help
+  puts <<-ENDHELP
+  Enhance scanned pages.
+
+  #{File.basename $0} [options] <file(s)>
+  
+  Options:
+      --help, -h        -- this help
+  ENDHELP
+end
+
+
+GetoptLong.new(
+  ["--help", "-h", GetoptLong::NO_ARGUMENT],
+).each do |opt, val|
+
+  key = opt[2..-1].to_sym
+  case key
+  when :help
+    print_help
+    exit 0
+  end
+
+end
+
+
+if ARGV.size == 0
+  print_help
+  exit 0
+end

@@ -14,7 +14,7 @@ module ScanEnhancer
 
     # Create an Enhancer instance and set the options
     def initialize opts={}
-      @options = {:dpi=>300, :threads=>1}.merge opts
+      @options = {:dpi=>300, :threads=>1, :verbose=>true}.merge opts
       @files, @images, @pages  = [], [], []
     end
 
@@ -23,13 +23,16 @@ module ScanEnhancer
       files.each do |file|
         load_file file
       end
+      @images.each{|img| @pages += img.pages}
     end
 
     # Load, analyse and append an input file
     def load_file file
       ifile = ImageFile.new file
       throw "'#{file}' does not contain any image" unless ifile.loaded?
-      puts "#{ifile.size} images loaded from #{ifile.file_name}"
+      puts "#{ifile.size} images loaded from #{ifile.file_name}" if @options[:verbose]
+      @files << ifile
+      @images += ifile.images
     end
 
   end

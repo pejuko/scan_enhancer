@@ -29,8 +29,15 @@ def print_help
 end
 
 
+if ARGV.size == 0
+  print_help
+  exit 0
+end
+
+
 GetoptLong.new(
-  ["--help", "-h", GetoptLong::NO_ARGUMENT],
+  ["--help",    "-h", GetoptLong::NO_ARGUMENT],
+  ["--verbose", "-v", GetoptLong::NO_ARGUMENT],
 ).each do |opt, val|
 
   key = opt[2..-1].to_sym
@@ -38,12 +45,10 @@ GetoptLong.new(
   when :help
     print_help
     exit 0
+  when :test
   end
 
 end
 
-
-if ARGV.size == 0
-  print_help
-  exit 0
-end
+enhancer = ScanEnhancer::Enhancer.new
+enhancer.load_files ARGV

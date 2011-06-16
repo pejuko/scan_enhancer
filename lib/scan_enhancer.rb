@@ -10,4 +10,8 @@
 require 'rubygems'
 require 'RMagick'
 
-require 'lib/scan_enhancer/enhancer.rb
+module ScanEnhancer
+  autoload :ImageFile, 'lib/scan_enhancer/image_file.rb'
+end
+
+require 'lib/scan_enhancer/enhancer.rb'

@@ -9,5 +9,11 @@ module ScanEnhancer
 
   # Detected page information in an image.
   class Page
+
+    #def initialize(img, x, y, width, height)
+    def initialize(img)
+      @image = img
+      #@x, @y, @width, @height = x, y, width, height
+    end
   end
 end

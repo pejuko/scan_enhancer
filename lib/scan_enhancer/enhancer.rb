@@ -23,7 +23,7 @@ module ScanEnhancer
       files.each do |file|
         load_file file
       end
-      @images.each{|img| @pages += img.pages}
+      @images.each{|img| @pages += img.analyse}
     end
 
     # Load, analyse and append an input file

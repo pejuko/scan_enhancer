@@ -13,14 +13,15 @@ module ScanEnhancer
     
     attr_reader :path, :images
 
-    def initialize file
+    def initialize file, opts={}
+      @options = opts
       @path = file
       @images = load_images
     end
 
     # Load images from a file and create class ScanEnhancer::Image
     def load_images
-      Magick::Image.read(@path).map!{|img| Image.new img}
+      Magick::Image.read(@path).map!{|img| Image.new img, @options}
     end
 
     # Get n-th image from a file.

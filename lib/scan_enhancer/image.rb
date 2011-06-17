@@ -13,11 +13,15 @@ module ScanEnhancer
     
     attr_reader :data, :pages
 
-    def initialize img
-      @data = img
+    def initialize img, opts={}
+      @options = opts
+      @attrib = {}
+      @attrib[:image_dpi] = img.density.to_i
+      @attrib[:image_dpi] = opts[:dpi] if opts[:force_dpi] or @attrib[:image_dpi]<100
+      @data = img.scale @options[:working_dpi].to_f/@attrib[:image_dpi]
+      desaturate!
       info
       @pages = []
-      @attrib = {}
     end
 
     # print some image information
@@ -36,6 +40,7 @@ module ScanEnhancer
       @attrib[:histogram] = histogram
       @attrib[:threshold] = rightPeak
       @mask = @data.threshold @attrib[:threshold]
+      @mask.display
       @pages << Page.new(self)
       @pages
     end
@@ -58,19 +63,52 @@ module ScanEnhancer
       hist
     end
 
-    # Detect right peak in image histogram
+    # Detect right peak and right valley in image histogram
     def rightPeak
       @attrib[:histogram] ||= histogram
+#      p @attrib[:histogram]
       j = idx = 255
+      valley = idx-1
       max_value = @attrib[:histogram][j]
       (idx-1).downto(0) do |i|
-        if @attrib[:histogram][i] > max_value
+        if @attrib[:histogram][i] >= max_value
           j = i
           max_value = @attrib[:histogram][j]
+          valley = j-1
+        elsif @attrib[:histogram][i] > 0.1*max_value
+          valley = i
         end
-        break if @attrib[:histogram][i] < (max_value*0.66)
+=begin
+        p @attrib[:histogram][i], 0.25*max_value
+        p "right_peak> i:#{i}, j:#{j}, valley:#{valley}, max_value:#{max_value}"
+=end
+        break if (valley-i > 15)
       end
-      ((j-1).to_f/256) * Magick::QuantumRange
+      (valley.to_f/256) * Magick::QuantumRange
+    end
+
+    # Detect left peak and right valley in image histogram
+    def leftPeak
+      @attrib[:histogram] ||= histogram
+#      p @attrib[:histogram]
+      j = idx = 0
+      valley = idx+1
+      max_value = @attrib[:histogram][j]
+      (idx+1).upto(255) do |i|
+        if @attrib[:histogram][i] >= max_value
+          j = i
+          max_value = @attrib[:histogram][j]
+          valley = j+1
+        elsif @attrib[:histogram][i] > 0.1*max_value
+          valley = i
+        end
+=begin
+        p @attrib[:histogram][i], 0.25*max_value
+        p "left_peak> i:#{i}, j:#{j}, valley:#{valley}, max_value:#{max_value}"
+=end
+        break if (i-valley > 15)
+      end
+      (valley.to_f/256) * Magick::QuantumRange
     end
 
     # Return number of pages on the image

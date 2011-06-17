@@ -7,6 +7,7 @@
 # Copyright:: Copyright (c) 2011 Petr Kovář
 # License::   Distributes under the same terms as Ruby
 
+require 'pp'
 require 'rubygems'
 require 'RMagick'
 

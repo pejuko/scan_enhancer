@@ -22,8 +22,8 @@ module ScanEnhancer
       @data = @data.scale(@options[:working_dpi].to_f/@attrib[:image_dpi])
       @width = @data.columns
       @height = @data.rows
-      @min_obj_size = @options[:working_dpi] / 30
-      @min_content_size = @options[:working_dpi] / 5
+      @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2)].max
+      @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
       info
       desaturate!
       @pages = []
@@ -79,9 +79,8 @@ module ScanEnhancer
 
     # Get list of content boxes from vertical/horizontal projection
     def computeContents(mask, dir=:vertical)
-      low, median = [0, 99999]
+      median = 99999
       lengths = mask.map{|c,l| l}.sort.delete_if{|x| x== 0}
-      low = lengths[0]
       median = lengths[lengths.size/2]
 
       # detect content
@@ -89,7 +88,7 @@ module ScanEnhancer
       content = nil
       mask.each_with_index do |m, i|
         c, l = m
-        if (l-low)/(median-low).to_f > 0.1
+        if l/median.to_f > 0.1
           content ||= [i, i, l]
           content[1] = i
           content[2] = l if l > content[2]
@@ -102,7 +101,7 @@ module ScanEnhancer
       # delete too small content and border content
       contents << content if content
       contents.delete_if do |c|
-        ((c[1] - c[0]) < @min_obj_size) or
+        ((c[1] - c[0]) < @min_obj_size)# or
         ((c[0] - @min_obj_size <= 0) and (c[2]<@min_content_size)) or
         ((c[1] + @min_obj_size >= mask.size) and (c[2]<@min_content_size))
       end
@@ -179,7 +178,8 @@ module ScanEnhancer
         idx = (y * @width) + x
         idx_top = ((y-inc_x) * @width) + x+inc_y
         idx_bottom = ((y+inc_x) * @width) + x-inc_y
-        if (@data[idx] <= @attrib[:threshold] or @data[idx_bottom] <= @attrib[:threshold]) and (@data[idx_top] <= @attrib[:threshold])
+        if @data[idx_top] and @data[idx_bottom] and (@data[idx] <= @attrib[:threshold] or @data[idx_bottom] <= @attrib[:threshold]) and (@data[idx_top] <= @attrib[:threshold])
+          p [edge, @attrib[:threshold], @data[idx], @data[idx_bottom], @data[idx_top], c]
           c[edge] += inc_edge
           x, y = [c[start_x], c[start_y]]
         end
@@ -190,7 +190,7 @@ module ScanEnhancer
 
     # Fix some bugs on edges
     def fineTuneContentBox(c)
-      #p c
+      p c
       # top edge
       fineTuneEdge(c, :left, :top, +1, 0, :top, -1, @height)
 
@@ -203,7 +203,7 @@ module ScanEnhancer
       # left edge
       fineTuneEdge(c, :left, :top, 0, +1, :left, -1, @width)
 
-      #p c
+      p c
       c
     end
 

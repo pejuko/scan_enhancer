@@ -19,9 +19,11 @@ module ScanEnhancer
       @attrib[:image_dpi] = img.density.to_i
       @attrib[:image_dpi] = opts[:dpi] if opts[:force_dpi] or @attrib[:image_dpi]<100
       @data = img
-      @data = @data.scale @options[:working_dpi].to_f/@attrib[:image_dpi]
+      @data = @data.scale(@options[:working_dpi].to_f/@attrib[:image_dpi])
       @width = @data.columns
       @height = @data.rows
+      @min_obj_size = @options[:working_dpi] / 30
+      @min_content_size = @options[:working_dpi] / 5
       info
       desaturate!
       @pages = []
@@ -31,9 +33,12 @@ module ScanEnhancer
     def info
       puts <<-ENDINFO
       DPI: #{@data.density}
+      Working DPI #{@options[:working_dpi]}
       Width: #{@data.columns}
       Height: #{@data.rows}
       Depth: #{@data.depth}
+      Min. Obj. Size: #{@min_obj_size}
+      Min. Content Size: #{@min_content_size}
       ENDINFO
     end
 
@@ -51,12 +56,13 @@ module ScanEnhancer
     # find page contents in image and create Page objects
     # (expects that @data is array of bytes, and the image is well orientated)
     def findPages
-      vertical_mask = verticalProjection
-      horizontal_mask = horizontalProjection
-#      display_content_mask(vertical_mask)
-#      display_content_mask(horizontal_mask, :horizontal)
+      @attrib[:vertical_projection] = verticalProjection
+      @attrib[:horizontal_projection] = horizontalProjection
+      display_content_mask @attrib[:vertical_projection]
+      display_content_mask @attrib[:horizontal_projection], :horizontal
 
-      content = computeContentBox(vertical_mask, horizontal_mask)
+      content = computeContentBox(@attrib[:vertical_projection], @attrib[:horizontal_projection])
+
       img = constitute(@data)
       draw = Magick::Draw.new
       draw.fill = "#fff0"
@@ -67,10 +73,80 @@ module ScanEnhancer
       draw.draw(img)
       img.display
       #draw.composite(0,0,@width,@height,img).display
-      pp content
+      #pp content
       []
     end
 
+    # Get list of content boxes from vertical/horizontal projection
+    def computeContents(mask, dir=:vertical)
+      low, median = [0, 99999]
+      lengths = mask.map{|c,l| l}.sort.delete_if{|x| x== 0}
+      low = lengths[0]
+      median = lengths[lengths.size/2]
+
+      # detect content
+      contents = []
+      content = nil
+      mask.each_with_index do |m, i|
+        c, l = m
+        if (l-low)/(median-low).to_f > 0.1
+          content ||= [i, i, l]
+          content[1] = i
+          content[2] = l if l > content[2]
+        else
+          contents << content if content
+          content = nil
+        end
+      end
+
+      # delete too small content and border content
+      contents << content if content
+      contents.delete_if do |c|
+        ((c[1] - c[0]) < @min_obj_size) or
+        ((c[0] - @min_obj_size <= 0) and (c[2]<@min_content_size)) or
+        ((c[1] + @min_obj_size >= mask.size) and (c[2]<@min_content_size))
+      end
+
+      # join adjacent content boxes
+      join = []
+      j = true
+      while j
+        j = false
+        contents.each do |c| 
+          if join.empty?
+            join << c
+            next
+          end
+          if (join[-1][1] + @min_content_size/2) >= c[0]
+            join[-1][1] = c[1]
+            join[-1][2] = c[2] if c[2] > join[-1][2]
+            j = true
+          else
+            join << c
+          end
+        end
+        contents = join
+        join = []
+      end
+
+      img = constitute(@data)
+      draw = Magick::Draw.new
+      draw.fill = "#fff0"
+      draw.stroke = "#f00f"
+      contents.each do |c|
+        if dir == :vertical
+          draw.rectangle(c[0], 0, c[1], c[2])
+        else
+          draw.rectangle(0, c[0], c[2], c[1])
+        end
+        draw.draw(img)
+      end
+      img.display
+
+      contents
+    end
+
+    # Return bounding content box
     def computeContentBox(vm, hm)
       c = {
         :left => 0,
@@ -78,71 +154,105 @@ module ScanEnhancer
         :top => 0,
         :bottom => @height
       }
-      0.upto(vm.size){|i| if vm[i][0] then c[:left] = i; break; end }
-      (vm.size-1).downto(0){|i| if vm[i][0] then c[:right] = i; break; end }
-      0.upto(hm.size){|i| if hm[i][0] then c[:top] = i; break; end }
-      (hm.size-1).downto(0){|i| if hm[i][0] then c[:bottom] = i; break; end }
+      @attrib[:vertical_contents] = computeContents(vm, :vertical)
+      @attrib[:horizontal_contents] = computeContents(hm, :horizontal)
+
+      # select the largest boxes
+      vb = @attrib[:vertical_contents].sort_by{|c| c[1]-c[0]}
+      hb = @attrib[:horizontal_contents]
+
+      c[:left] = vb.last[0]
+      c[:right] = vb.last[1]
+      c[:top] = hb.first[0]
+      c[:bottom] = [vb.last[2], hb.last[1]].min
+      
+      fineTuneContentBox(c)
+
       c
+    end
+
+    # Fix bugs on given edge
+    def fineTuneEdge(c, start_x, start_y, inc_x, inc_y, edge, inc_edge, max)
+      x, y = [c[start_x], c[start_y]]
+      while (x <= c[:right]) and (y <= c[:bottom])
+        break if (c[edge] <= 0) or (c[edge] >= max)
+        idx = (y * @width) + x
+        idx_top = ((y-inc_x) * @width) + x+inc_y
+        idx_bottom = ((y+inc_x) * @width) + x-inc_y
+        if (@data[idx] <= @attrib[:threshold] or @data[idx_bottom] <= @attrib[:threshold]) and (@data[idx_top] <= @attrib[:threshold])
+          c[edge] += inc_edge
+          x, y = [c[start_x], c[start_y]]
+        end
+        x += inc_x
+        y += inc_y
+      end
+    end
+
+    # Fix some bugs on edges
+    def fineTuneContentBox(c)
+      #p c
+      # top edge
+      fineTuneEdge(c, :left, :top, +1, 0, :top, -1, @height)
+
+      # bottom edge
+      fineTuneEdge(c, :left, :bottom, +1, 0, :bottom, +1, @height)
+
+      # right edge
+      fineTuneEdge(c, :right, :top, 0, +1, :right, +1, @width)
+
+      # left edge
+      fineTuneEdge(c, :left, :top, 0, +1, :left, -1, @width)
+
+      #p c
+      c
+    end
+
+    # Run vertical or horizontal projection (dir = :vertical | :horizontal)
+    def projection(dir)
+      w,h = dir==:vertical ? [@width, @height] : [@height, @width]
+      content_mask = Array.new(w){[false, 0]}
+
+      w.times do |a|
+        obj_height = 0
+        gap = 0
+        h.times do |b|
+          x,y = dir==:vertical ? [a,b] : [b,a]
+          idx = (y * @width) + x
+          if @data[idx] <= @attrib[:threshold]
+            obj_height += 1
+            obj_height += gap if gap <= @min_obj_size
+            gap = 0
+          else
+            gap += 1
+            content_mask[a] = [true, b] if obj_height > @min_obj_size
+            obj_height = 0
+          end
+        end
+      end
+
+      content_mask
     end
 
     # find vertical blocks
     # allow to detect columns, pages => left and right borders
     def verticalProjection
-      min_line_height = @height / @options[:working_dpi]
-      content_mask = Array.new(@width){[false, 0]}
-
-      @width.times do |x|
-        obj_height = 0
-        @height.times do |y|
-          idx = (y * @width) + x
-          if @data[idx] <= @attrib[:threshold]
-            obj_height += 1
-          else
-            if obj_height > min_line_height
-#              puts "min_line_height: #{min_line_height}, obj_height: #{obj_height}"
-              content_mask[x][0] = true
-              content_mask[x][1] = y
-            end
-            obj_height = 0
-          end
-        end
-      end
-
-      content_mask
+      projection(:vertical)
     end
 
     # detect horizontal blocks
     # detects top and bottom borders (line detection depends on page skew)
     def horizontalProjection
-      min_line_height = @height / @options[:working_dpi]
-      content_mask = Array.new(@height){[false, 0]}
-
-      @height.times do |y|
-        obj_width = 0
-        @width.times do |x|
-          idx = (y * @width) + x
-          if @data[idx] <= @attrib[:threshold]
-            obj_width += 1
-          else
-            if obj_width > min_line_height
-#              puts "min_line_height: #{min_line_height}, obj_height: #{obj_height}"
-              content_mask[y][0] = true
-              content_mask[y][1] = x
-            end
-            obj_height = 0
-          end
-        end
-      end
-
-      content_mask
+      projection(:horizontal)
     end
 
     # helper function
     # creates B/W Magick::Image with highlighted content
     def display_content_mask(cm, dir = :vertical)
-      mdata = Array.new(@height){Array.new(@width){255}}
+      mdata = Array.new(@height){Array.new(@width){200}}
       cm.each_with_index do |meta, i|
+        max = 0
         meta[1].times do |y|
+          max += 1
           if (dir == :vertical)
             mdata[y][i] = 100
           else

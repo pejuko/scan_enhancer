@@ -101,7 +101,7 @@ module ScanEnhancer
       # delete too small content and border content
       contents << content if content
       contents.delete_if do |c|
-        ((c[1] - c[0]) < @min_obj_size)# or
+        ((c[1] - c[0]) < @min_obj_size) or
         ((c[0] - @min_obj_size <= 0) and (c[2]<@min_content_size)) or
         ((c[1] + @min_obj_size >= mask.size) and (c[2]<@min_content_size))
       end
@@ -116,7 +116,7 @@ module ScanEnhancer
             join << c
             next
           end
-          if (join[-1][1] + @min_content_size/2) >= c[0]
+          if (join[-1][1] + @min_content_size) >= c[0]
             join[-1][1] = c[1]
             join[-1][2] = c[2] if c[2] > join[-1][2]
             j = true

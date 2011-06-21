@@ -98,14 +98,6 @@ module ScanEnhancer
         end
       end
 
-      # delete too small content and border content
-      contents << content if content
-      contents.delete_if do |c|
-        ((c[1] - c[0]) < @min_obj_size) or
-        ((c[0] - @min_obj_size <= 0) and (c[2]<@min_content_size)) or
-        ((c[1] + @min_obj_size >= mask.size) and (c[2]<@min_content_size))
-      end
-
       # join adjacent content boxes
       join = []
       j = true
@@ -126,6 +118,14 @@ module ScanEnhancer
         end
         contents = join
         join = []
+      end
+
+      # delete too small content and border content
+      contents << content if content
+      contents.delete_if do |c|
+        ((c[1] - c[0]) < @min_obj_size) or
+        ((c[0] - @min_obj_size <= 0) and (c[2]<@min_content_size)) or
+        ((c[1] + @min_obj_size >= mask.size) and (c[2]<@min_content_size))
       end
 
       img = constitute(@data)

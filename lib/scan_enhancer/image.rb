@@ -47,8 +47,8 @@ module ScanEnhancer
     def analyse
       @attrib[:histogram] = histogram
       @attrib[:threshold] = rightPeak
-      #@mask = Magick::Image.constitute(@width, @height, "I", @data).threshold(@attrib[:threshold])
-      #@mask.display
+      @mask = Magick::Image.constitute(@width, @height, "I", @data).threshold(@attrib[:threshold])
+      @mask.display
       @pages = findPages
       @pages
     end
@@ -56,25 +56,115 @@ module ScanEnhancer
     # find page contents in image and create Page objects
     # (expects that @data is array of bytes, and the image is well orientated)
     def findPages
+      @attrib[:borders] = detectBorders
       @attrib[:vertical_projection] = verticalProjection
       @attrib[:horizontal_projection] = horizontalProjection
       display_content_mask @attrib[:vertical_projection]
       display_content_mask @attrib[:horizontal_projection], :horizontal
 
       content = computeContentBox(@attrib[:vertical_projection], @attrib[:horizontal_projection])
+      highlight content, "Content Box"
 
+      #pp content
+      []
+    end
+
+    def highlight(rect, msg=nil)
       img = constitute(@data)
       draw = Magick::Draw.new
       draw.fill = "#fff0"
       draw.stroke = "#f00f"
-      #draw.border_color = 'red'
-      #draw.stroke_width = 3
-      draw.rectangle(content[:left], content[:top], content[:right], content[:bottom])
+      draw.rectangle(rect[:left], rect[:top], rect[:right], rect[:bottom])
       draw.draw(img)
+      if msg
+        draw = Magick::Draw.new
+        draw.fill = "#ffff"
+        draw.stroke = "#000f"
+        draw.text(rect[:left]+15, rect[:top]+2, msg)
+        draw.draw(img)
+      end
       img.display
       #draw.composite(0,0,@width,@height,img).display
-      #pp content
-      []
+    end
+
+    def index(x, y)
+      (y * @width) + x
+    end
+
+
+    # Remove black corner
+    def fineTuneBorderCorner(b, x, y, inc_x, inc_y)
+      x1, y1 = [b[x]+inc_x, b[y]+inc_y]
+      idx = 0
+      loop do
+        idx = index(x1, y1)
+        break if @data[idx] > @attrib[:threshold]
+        x1 += inc_x
+        y1 += inc_y
+      end
+      if idx < @data.size
+        b[x] = x1 
+        b[y] = y1
+      end
+      b
+    end
+
+    # trim borders
+    def fineTuneBorders(b)
+      fineTuneBorderCorner(b, :left, :top, +1, +1)
+      fineTuneBorderCorner(b, :right, :top, -1, +1)
+      fineTuneBorderCorner(b, :left, :bottom, +1, -1)
+      fineTuneBorderCorner(b, :right, :bottom, -1, -1)
+    end
+
+    # Detect border on given edge
+    def detectBorder(start_pos, end_pos, inc, mid, dir)
+      gap = 0
+      border = 0
+
+      i = start_pos
+      while i != end_pos
+        ms = mid - @min_content_size
+        me = mid + @min_content_size
+        old_gap = gap
+
+        j = ms
+        while j<me do
+          idx = dir==:vertical ? index(j,i) : index(i,j)
+          if @data[idx] <= @attrib[:threshold]
+            gap = 0
+            break
+          end
+          j += 1
+        end
+
+        gap += 1 if gap == old_gap
+
+        if gap > @min_content_size
+          border = i
+          break
+        end
+
+        i += inc
+      end
+
+      border - (inc*gap)
+    end
+
+    # Find left, top, right and bottom borders of the page
+    def detectBorders
+      xmid = @width / 2
+      ymid = @height / 2
+      borders = {
+        :left   => detectBorder(0, @width-1, +1, ymid, :horizontal),
+        :top    => detectBorder(0, @height-1, +1, xmid, :vertical),
+        :right  => detectBorder(@width-1, 0, -1, ymid, :horizontal),
+        :bottom => detectBorder(@height-1, 0, -1, xmid, :vertical)
+      }
+      fineTuneBorders(borders)
+      highlight borders, "borders"
+      p borders
+      borders
     end
 
     # Get list of content boxes from vertical/horizontal projection
@@ -88,6 +178,8 @@ module ScanEnhancer
       content = nil
       mask.each_with_index do |m, i|
         c, l = m
+        next if (dir==:vertical) and (@attrib[:borders][:left] >= i or @attrib[:borders][:right] <= i)
+        next if (dir==:horizontal) and (@attrib[:borders][:top] >= i or @attrib[:borders][:bottom] <= i)
         if l/median.to_f > 0.1
           content ||= [i, i, l]
           content[1] = i
@@ -123,9 +215,9 @@ module ScanEnhancer
       # delete too small content and border content
       contents << content if content
       contents.delete_if do |c|
-        ((c[1] - c[0]) < @min_obj_size) or
-        ((c[0] - @min_obj_size <= 0) and (c[2]<@min_content_size)) or
-        ((c[1] + @min_obj_size >= mask.size) and (c[2]<@min_content_size))
+        ((c[1] - c[0]) < @min_obj_size)# or
+#        ((c[0] - @min_obj_size <= 0) and (c[2]<@min_content_size)) or
+#        ((c[1] + @min_obj_size >= mask.size) and (c[2]<@min_content_size))
       end
 
       img = constitute(@data)
@@ -171,15 +263,15 @@ module ScanEnhancer
     end
 
     # Fix bugs on given edge
-    def fineTuneEdge(c, start_x, start_y, inc_x, inc_y, edge, inc_edge, max)
+    def fineTuneEdge(c, start_x, start_y, inc_x, inc_y, edge, inc_edge, min, max)
       x, y = [c[start_x], c[start_y]]
       while (x <= c[:right]) and (y <= c[:bottom])
-        break if (c[edge] <= 0) or (c[edge] >= max)
-        idx = (y * @width) + x
-        idx_top = ((y-inc_x) * @width) + x+inc_y
-        idx_bottom = ((y+inc_x) * @width) + x-inc_y
+        break if (c[edge] <= min) or (c[edge] >= max)
+        idx = index(x, y)
+        idx_top = index(x+inc_y, y-inc_x)
+        idx_bottom = index(x-inc_y, y+inc_x)
         if @data[idx_top] and @data[idx_bottom] and (@data[idx] <= @attrib[:threshold] or @data[idx_bottom] <= @attrib[:threshold]) and (@data[idx_top] <= @attrib[:threshold])
-          p [edge, @attrib[:threshold], @data[idx], @data[idx_bottom], @data[idx_top], c]
+          #p [edge, @attrib[:threshold], @data[idx], @data[idx_bottom], @data[idx_top], c]
           c[edge] += inc_edge
           x, y = [c[start_x], c[start_y]]
         end
@@ -190,34 +282,37 @@ module ScanEnhancer
 
     # Fix some bugs on edges
     def fineTuneContentBox(c)
-      p c
+      #p c
+
+      l, t, r, b = @attrib[:borders].values_at(:left, :top, :right, :bottom)
       # top edge
-      fineTuneEdge(c, :left, :top, +1, 0, :top, -1, @height)
+      fineTuneEdge(c, :left, :top, +1, 0, :top, -1, t, b)
 
       # bottom edge
-      fineTuneEdge(c, :left, :bottom, +1, 0, :bottom, +1, @height)
+      fineTuneEdge(c, :left, :bottom, +1, 0, :bottom, +1, t, b)
 
       # right edge
-      fineTuneEdge(c, :right, :top, 0, +1, :right, +1, @width)
+      fineTuneEdge(c, :right, :top, 0, +1, :right, +1, l, r)
 
       # left edge
-      fineTuneEdge(c, :left, :top, 0, +1, :left, -1, @width)
+      fineTuneEdge(c, :left, :top, 0, +1, :left, -1, l, r)
 
-      p c
+      #p c
       c
     end
 
     # Run vertical or horizontal projection (dir = :vertical | :horizontal)
     def projection(dir)
       w,h = dir==:vertical ? [@width, @height] : [@height, @width]
+      mw,mh = dir==:vertical ? [@width, @height-@attrib[:borders][:bottom]] : [@height, @width-@attrib[:borders][:right]]
       content_mask = Array.new(w){[false, 0]}
 
       w.times do |a|
         obj_height = 0
         gap = 0
-        h.times do |b|
+        (h-mh).times do |b|
           x,y = dir==:vertical ? [a,b] : [b,a]
-          idx = (y * @width) + x
+          idx = index(x, y)
           if @data[idx] <= @attrib[:threshold]
             obj_height += 1
             obj_height += gap if gap <= @min_obj_size

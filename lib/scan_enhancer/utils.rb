@@ -120,7 +120,6 @@ module ScanEnhancer
 
     # Grayscale 8-bit image histogram
     def histogram
-      desaturate! unless @attrib[:desaturated]
       hist = Array.new(256){0}
       @data.each do |pix|
         hist[pix] += 1
@@ -376,6 +375,20 @@ module ScanEnhancer
       fineTuneContentBox(c)
 
       c
+    end
+
+    # cut rectangel from @data
+    def cut(x1, y1, x2, y2)
+      w, h = [x2-x1, y2-y1]
+      new_data = Array.new(w*h){255}
+      h.times do |y|
+        w.times do |x|
+          old_idx = index(x1+x, y1+y)
+          new_idx = (y * w) + x
+          new_data[new_idx] = @data[old_idx]
+        end
+      end
+      new_data
     end
 
   end

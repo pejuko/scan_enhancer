@@ -12,7 +12,7 @@ module ScanEnhancer
   class Image
     include Utils
     
-    attr_reader :data, :pages
+    attr_reader :data, :pages, :attrib
 
     def initialize img, opts={}
       @options = opts
@@ -56,6 +56,11 @@ module ScanEnhancer
       @mask = Magick::Image.constitute(@width, @height, "I", @data).threshold(@attrib[:threshold])
       @mask.display
       @pages = findPages
+
+      @pages.each do |page|
+        page.analyse
+      end
+
       @pages
     end
 
@@ -64,28 +69,38 @@ module ScanEnhancer
     def findPages
 #      @attrib[:borders] = detectBorders
       @attrib[:vertical_projection] = verticalProjection
-      #pages = splitPages
-      @attrib[:horizontal_projection] = horizontalProjection
-      display_content_mask @attrib[:vertical_projection]
-      display_content_mask @attrib[:horizontal_projection], :horizontal
-
-      content = computeContentBox(@attrib[:vertical_projection], @attrib[:horizontal_projection])
-      highlight content, "Content Box"
-
-      #pp content
-      []
+      splitPages
     end
 
     # Split pages based on vertical projection
     def splitPages
       pages = []
-      boxes =  computeContents(@attrib[:vertical_contents], :vertical).sort_by{|c| c[1]-c[0]}
+      boxes =  computeContents(@attrib[:vertical_projection], :vertical).sort_by{|c| @width-(c[1]-c[0])}
 
-      if @width < @height
+      if (@width < @height)
         # only one page content => return the largest one
-        pages << Page.new(@data, @width, @height)
+        pages << Page.new(@data, @width, @height, @options)
       else
-        # probably two page layout
+        # landscape => probably two page layout
+        p1, p2 = boxes[0,2]
+        w1 = p1[1] - p1[0]
+        if p2 and ((p2[1]-p1[0]) >= (w1-2*@min_content_size))
+          lp, rp = p1[0]<p2[0] ? [p1,p2] : [p2,p1]
+          middle = (lp[1] + rp[0]) / 2
+          point = []
+          boxes[2..-1].each do |b|
+            next if b[0]<lp[1] or b[1]>rp[0]
+            point = b if point.empty? or b[2]>point[2]
+          end
+          point = [middle,middle, 1] if point.empty?
+          split_point = (point[0] + point[1]) / 2
+          pages << Page.new(cut(0, 0, split_point, @height), split_point, @height, @options)
+          pages << Page.new(cut(split_point, 0, @width, @height), @width-split_point, @height, @options)
+          pages[0].position[:right] = pages[1].position[:left] = split_point.to_f/@width
+        else
+          # one page layout
+          pages << Page.new(@data, @width, @height)
+        end
       end
 
       pages
@@ -94,7 +109,6 @@ module ScanEnhancer
     # Convert image color space to 8-bit grayscale
     def desaturate!
       @data = @data.quantize(256, Magick::GRAYColorspace).dispatch(0,0,@data.columns,@data.rows,"I",true).map{|pix| (255*pix).to_i}
-      @attrib[:desaturated] = true
     end
 
     # Return number of pages on the image

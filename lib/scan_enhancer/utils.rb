@@ -14,6 +14,7 @@ module ScanEnhancer
   module Utils
 
     # Fix bugs on given edge
+    # it moves the edge if black pixels are presented
     def fineTuneEdge(c, start_x, start_y, inc_x, inc_y, edge, inc_edge, min, max)
       x, y = [c[start_x], c[start_y]]
       while (x <= c[:right]) and (y <= c[:bottom])
@@ -21,7 +22,8 @@ module ScanEnhancer
         idx = index(x, y)
         idx_top = index(x+inc_y, y-inc_x)
         idx_bottom = index(x-inc_y, y+inc_x)
-        if @data[idx_top] and @data[idx_bottom] and (@data[idx] <= @attrib[:threshold] or @data[idx_bottom] <= @attrib[:threshold]) and (@data[idx_top] <= @attrib[:threshold])
+#        if @data[idx_top] and @data[idx_bottom] and (@data[idx] <= @attrib[:threshold] or @data[idx_bottom] <= @attrib[:threshold]) and (@data[idx_top] <= @attrib[:threshold])
+        if @data[idx_top] and @data[idx_bottom] and (@data[idx_top] <= @attrib[:threshold])
           #p [edge, @attrib[:threshold], @data[idx], @data[idx_bottom], @data[idx_top], c]
           c[edge] += inc_edge
           x, y = [c[start_x], c[start_y]]
@@ -140,23 +142,26 @@ module ScanEnhancer
 #      p @attrib[:histogram]
       j = idx = 255
       valley = idx-1
+      valley_sum = 0
       max_value = @attrib[:histogram][j]
       (idx-1).downto(0) do |i|
         if @attrib[:histogram][i] >= max_value
           j = i
           max_value = @attrib[:histogram][j]
           valley = j-1
-        elsif @attrib[:histogram][i] > 0.1*max_value
-          valley = i
+          valley_sum = 0
+        else
+          valley_sum += @attrib[:histogram][i]
         end
-=begin
-        p @attrib[:histogram][i], 0.25*max_value
-        p "right_peak> i:#{i}, j:#{j}, valley:#{valley}, max_value:#{max_value}"
-=end
-        break if (valley-i > 15)
+
+        if valley_sum > 0.3*max_value
+          valley = i
+          valley_sum = 0
+        end
+
+        break if (valley-i > 50)
       end
-      #(valley.to_f/256) * Magick::QuantumRange
-      valley
+      valley - 1
     end
 
     # Detect left peak and right valley in image histogram
@@ -235,7 +240,7 @@ module ScanEnhancer
     # Detect border on given edge
     def detectBorder(start_pos, end_pos, inc, mid, dir)
       gap = 0
-      border = 0
+      border = start_pos
 
       i = start_pos
       while i != end_pos
@@ -247,23 +252,20 @@ module ScanEnhancer
         while j<me do
           idx = dir==:vertical ? index(j,i) : index(i,j)
           if @data[idx] <= @attrib[:threshold]
+            border = i
             gap = 0
             break
+          else
+            gap += 1 if gap == old_gap
           end
           j += 1
         end
 
-        gap += 1 if gap == old_gap
-
-        if gap > @min_content_size
-          border = i
-          break
-        end
-
+        break if gap > (@min_obj_size*2)
         i += inc
       end
 
-      border - (inc*gap)
+      border
     end
 
     # Find left, top, right and bottom borders of the page
@@ -276,9 +278,8 @@ module ScanEnhancer
         :right  => detectBorder(@width-1, 0, -1, ymid, :horizontal),
         :bottom => detectBorder(@height-1, 0, -1, xmid, :vertical)
       }
-      #fineTuneBorders(borders)
+      fineTuneBorders(borders)
       highlight borders, "borders"
-      p borders
       borders
     end
 
@@ -287,6 +288,7 @@ module ScanEnhancer
       median = 99999
       lengths = mask.map{|c,l| l}.sort.delete_if{|x| x== 0}
       median = lengths[lengths.size/2]
+      border = dir==:vertical ? @attrib[:borders][:top] : @attrib[:borders][:left]
 
       # detect content
       contents = []
@@ -295,7 +297,7 @@ module ScanEnhancer
         c, l = m
         next if (dir==:vertical) and (@attrib[:borders][:left] >= i or @attrib[:borders][:right] <= i)
         next if (dir==:horizontal) and (@attrib[:borders][:top] >= i or @attrib[:borders][:bottom] <= i)
-        if l/median.to_f > 0.1
+        if (l-border)/median.to_f > 0.1
           content ||= [i, i, l]
           content[1] = i
           content[2] = l if l > content[2]

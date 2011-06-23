@@ -34,6 +34,11 @@ module ScanEnhancer
     def analyse
       @attrib[:histogram] = histogram
       @attrib[:threshold] = rightPeak
+      # p @attrib
+
+      @mask = Magick::Image.constitute(@width, @height, "I", @data).threshold(@attrib[:threshold])
+      @mask.display
+
       @attrib[:borders] = detectBorders
       @attrib[:vertical_projection] = verticalProjection
       @attrib[:horizontal_projection] = horizontalProjection

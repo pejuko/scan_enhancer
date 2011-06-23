@@ -53,8 +53,6 @@ module ScanEnhancer
     def analyse
       @attrib[:histogram] = histogram
       @attrib[:threshold] = rightPeak
-      @mask = Magick::Image.constitute(@width, @height, "I", @data).threshold(@attrib[:threshold])
-      @mask.display
       @pages = findPages
 
       @pages.each do |page|
@@ -99,7 +97,7 @@ module ScanEnhancer
           pages[0].position[:right] = pages[1].position[:left] = split_point.to_f/@width
         else
           # one page layout
-          pages << Page.new(@data, @width, @height)
+          pages << Page.new(@data, @width, @height, @options)
         end
       end
 

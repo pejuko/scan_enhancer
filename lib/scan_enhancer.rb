@@ -13,8 +13,9 @@ require 'RMagick'
 
 module ScanEnhancer
   autoload :ImageFile, 'lib/scan_enhancer/image_file.rb'
+  autoload :Utils,     'lib/scan_enhancer/utils.rb'
   autoload :Image,     'lib/scan_enhancer/image.rb'
-  autoload :Page,     'lib/scan_enhancer/page.rb'
+  autoload :Page,      'lib/scan_enhancer/page.rb'
 end
 
 require 'lib/scan_enhancer/enhancer.rb'

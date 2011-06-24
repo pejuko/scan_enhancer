@@ -12,10 +12,13 @@ require 'rubygems'
 require 'RMagick'
 
 module ScanEnhancer
-  autoload :ImageFile, 'lib/scan_enhancer/image_file.rb'
-  autoload :Utils,     'lib/scan_enhancer/utils.rb'
-  autoload :Image,     'lib/scan_enhancer/image.rb'
-  autoload :Page,      'lib/scan_enhancer/page.rb'
+  autoload :ImageFile,  'lib/scan_enhancer/image_file.rb'
+  autoload :Box,        'lib/scan_enhancer/box.rb'
+  autoload :Projection, 'lib/scan_enhancer/projection.rb'
+  autoload :Content,    'lib/scan_enhancer/content.rb'
+  autoload :Borders,    'lib/scan_enhancer/borders.rb'
+  autoload :Image,      'lib/scan_enhancer/image.rb'
+  autoload :Page,       'lib/scan_enhancer/page.rb'
 end
 
 require 'lib/scan_enhancer/enhancer.rb'

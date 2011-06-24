@@ -8,8 +8,7 @@
 module ScanEnhancer
 
   # Detected page information in an image.
-  class Page
-    include Utils
+  class Page < Image
 
     attr_reader :position
 
@@ -20,35 +19,33 @@ module ScanEnhancer
       @width = width
       @height = height
       @position = {:left => 0.0, :top => 0.0, :right => 1.0, :bottom => 1.0}
-      constitute(@data).display
+      #constitute(@data).display
 
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2)].max
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
-      @attrib[:borders] = {}
-      @attrib[:borders][:left] = 0
-      @attrib[:borders][:top] = 0
-      @attrib[:borders][:right] = @width - 1
-      @attrib[:borders][:bottom] = @height - 1
+      @borders = Box.new(0, 0, @width-1, @height-1)
     end
 
     def analyse
       @attrib[:histogram] = histogram
       @attrib[:threshold] = rightPeak
-      # p @attrib
 
-      @mask = Magick::Image.constitute(@width, @height, "I", @data).threshold(@attrib[:threshold])
-      @mask.display
-
-      @attrib[:borders] = detectBorders
-      @attrib[:vertical_projection] = verticalProjection
-      @attrib[:horizontal_projection] = horizontalProjection
+      @borders = Borders.new(self)
+      @borders.fineTuneBorders!
+      @borders.highlight(constitute, "Borders").display
       @attrib[:threshold] = rightPeak
 
-      display_content_mask @attrib[:vertical_projection]
-      display_content_mask @attrib[:horizontal_projection], :horizontal
+      @vertical_projection = Projection.new(self, Projection::VERTICAL)
+      @vertical_projection.delete_small!
+      @vertical_projection.join_adjacent!
 
-      content = computeContentBox(@attrib[:vertical_projection], @attrib[:horizontal_projection])
-      highlight content, "Content Box"
+      @horizontal_projection = Projection.new(self, Projection::HORIZONTAL)
+      @horizontal_projection.delete_small!
+      @horizontal_projection.join_adjacent!
+
+      @content = Content.new(self)
+      @content.fineTuneContentBox!
+      @content.highlight.display
     end
   end
 end

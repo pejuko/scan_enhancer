@@ -62,12 +62,10 @@ module ScanEnhancer
     # Detect border on given edge
     def detectBorder(start_pos, end_pos, inc, mid, dir)
       gap = 0
-      border = start_pos
-
-      i = start_pos
+      i = border = start_pos
       while i != end_pos
-        ms = mid - @image.min_content_size
-        me = mid + @image.min_content_size
+        ms = mid - 4*@image.min_content_size
+        me = mid + 4*@image.min_content_size
         old_gap = gap
 
         j = ms

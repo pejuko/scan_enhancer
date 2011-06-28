@@ -19,9 +19,7 @@ module ScanEnhancer
       @width = width
       @height = height
       @position = {:left => 0.0, :top => 0.0, :right => 1.0, :bottom => 1.0}
-      #constitute(@data).display
-
-      @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2)].max
+      @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2) + 1].max
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
     end
@@ -33,7 +31,6 @@ module ScanEnhancer
       @borders = Borders.new(self)
       @borders.fineTuneBorders!
       @borders.highlight(constitute, "Borders").display
-      @attrib[:threshold] = rightPeak
 
       @vertical_projection = Projection.new(self, Projection::VERTICAL)
       @vertical_projection.delete_small!

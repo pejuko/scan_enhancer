@@ -19,10 +19,15 @@ module ScanEnhancer
     def fineTuneContentBox!
       l, t, r, b = @image.borders.to_a
 
-      @left = fineTuneEdge(:left, :top, 0, +1, :left, -1, l, r)
-      @top = fineTuneEdge(:left, :top, +1, 0, :top, -1, t, b)
-      @right = fineTuneEdge(:right, :top, 0, +1, :right, +1, l, r)
-      @bottom = fineTuneEdge(:left, :bottom, +1, 0, :bottom, +1, t, b)
+      change = true
+      while change
+        old_l, old_t, old_r, old_b = [@left, @top, @right, @bottom]
+        @left = fineTuneEdge(:left, :top, 0, +1, :left, -1, l, r)
+        @top = fineTuneEdge(:left, :top, +1, 0, :top, -1, t, b)
+        @right = fineTuneEdge(:right, :top, 0, +1, :right, +1, l, r)
+        @bottom = fineTuneEdge(:left, :bottom, +1, 0, :bottom, +1, t, b)
+        change = (@left != old_l) or (@top != old_t) or (@right != old_r) or (@bottom != old_b)
+      end
 
       self
     end
@@ -50,12 +55,10 @@ module ScanEnhancer
     # it moves the edge if black pixels are presented
     def fineTuneEdge(start_x, start_y, inc_x, inc_y, edge, inc_edge, min, max)
       x, y = self.send(start_x), self.send(start_y)
-      while (x <= @right) and (y <= @bottom)
-        break if (self.send(edge) <= min) or (self.send(edge) >= max)
-        idx = @image.index(x, y)
-        idx_top = @image.index(x+inc_y, y-inc_x)
-        idx_bottom = @image.index(x-inc_y, y+inc_x)
-        if @image.data[idx_top] and @image.data[idx_bottom] and (@image.data[idx_top] <= @image.attrib[:threshold])
+      while (x <= @right) and (y <= @bottom) and (self.send(edge) > min) and (self.send(edge) < max)
+        top_x, top_y = (x != 0) ? [x, y+inc_edge] : [x+inc_edge, y]
+        idx_top = @image.index(top_x, top_y)
+        if @image.data[idx_top] and (@image.data[idx_top] <= @image.attrib[:threshold])
           eval %~@#{edge} += inc_edge~
           x, y = [self.send(start_x), self.send(start_y)]
         end

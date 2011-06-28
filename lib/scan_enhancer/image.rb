@@ -31,7 +31,6 @@ module ScanEnhancer
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
       desaturate!
-      info
       @pages = []
     end
 
@@ -67,7 +66,7 @@ module ScanEnhancer
     # for each page in an image.
     def analyse
       @attrib[:histogram] = histogram
-      @attrib[:threshold] = rightPeak
+      @attrib[:threshold] = rightPeak[0]
       @pages = findPages
 
       @pages.each do |page|
@@ -88,8 +87,8 @@ module ScanEnhancer
         # landscape => probably two page layout
         vp = Projection.new(self, Projection::VERTICAL)
         vp.delete_small!
-        vp.join_adjacent!
-        vp.highlight.display
+        #vp.join_adjacent!
+        vp.highlight.display if $DISPLAY
         boxes =  vp.to_boxes.sort_by{|b| b.width}.reverse
 
         p1, p2 = boxes[0,2]
@@ -134,6 +133,10 @@ module ScanEnhancer
     end
     def cut!(x1, y1, x2, y2); @data = cut(x1,y1,x2,y2); end
 
+    def threshold! t=@attrib[:threshold]
+      @data.each_with_index { |pixel, i| @data[i] = (pixel <= t) ? 0 : 255 }
+    end
+
     # Return number of pages on the image
     def size
       @pages.size
@@ -147,6 +150,7 @@ module ScanEnhancer
       end
       hist
     end
+    def histogram!; @attrib[:histogram] = histogram; end
 
     # Detect right peak and right valley in image histogram
     def rightPeak
@@ -173,7 +177,7 @@ module ScanEnhancer
 
         break if (valley-i > 50)
       end
-      valley - 1
+      [valley - 1, j]
     end
 
     # Detect left peak and right valley in image histogram

@@ -36,14 +36,26 @@ module ScanEnhancer
       super(img, "Content Box")
     end
 
+    def fill(color=255)
+      super(@image, color)
+    end
+
+    def fill_invert
+      invert(@image.width, @image.height).each do |box|
+        box.fill(@image)
+      end
+    end
+
     private
 
     def computeContentBox
       vp = @image.vertical_projection
       hp = @image.horizontal_projection
 
-      vp.highlight.display
-      hp.highlight.display
+      if $DISPLAY
+        vp.highlight.display
+        hp.highlight.display
+      end
 
       vb = vp.to_boxes.sort_by{|b| b.width}.last
       hbs = hp.to_boxes

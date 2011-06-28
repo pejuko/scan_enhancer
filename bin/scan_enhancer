@@ -38,6 +38,7 @@ end
 GetoptLong.new(
   ["--help",    "-h", GetoptLong::NO_ARGUMENT],
   ["--verbose", "-v", GetoptLong::NO_ARGUMENT],
+  ["--display", "-d", GetoptLong::NO_ARGUMENT],
 ).each do |opt, val|
 
   key = opt[2..-1].to_sym
@@ -45,6 +46,8 @@ GetoptLong.new(
   when :help
     print_help
     exit 0
+  when :display
+    $DISPLAY = true
   when :test
   end
 
@@ -52,3 +55,4 @@ end
 
 enhancer = ScanEnhancer::Enhancer.new
 enhancer.load_files ARGV
+enhancer.export

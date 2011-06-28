@@ -15,7 +15,18 @@ module ScanEnhancer
     # Create an Enhancer instance and set the options
     def initialize opts={}
       @options = {:dpi=>300, :output_dpi=>300, :working_dpi=>150, :force_dpi=>false, :threads=>1, :verbose=>true}.merge opts
+      @page_number_start = 1
+      @page_number_step = 1
       @files, @images, @pages  = [], [], []
+    end
+
+    # export pages to files
+    def export
+      @pages.each_with_index do |page, i|
+        page.content.fill_invert
+        page.threshold!
+        page.export("page-%04d.png" % [@page_number_start + @page_number_step*i])
+      end
     end
 
     # Load and analyse input files
@@ -23,8 +34,9 @@ module ScanEnhancer
       files.each do |file|
         load_file file
       end
-      @images.each{|img| @pages += img.analyse}
     end
+
+    private
 
     # Load, analyse and append an input file
     def load_file file
@@ -32,7 +44,11 @@ module ScanEnhancer
       throw "'#{file}' does not contain any image" unless ifile.loaded?
       puts "#{ifile.size} images loaded from #{ifile.file_name}" if @options[:verbose]
       @files << ifile
-      @images += ifile.images
+      ifile.images.each do |image|
+        image.info
+        @images << image
+        @pages += image.analyse
+      end
     end
 
   end

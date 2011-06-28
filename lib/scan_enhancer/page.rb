@@ -10,7 +10,7 @@ module ScanEnhancer
   # Detected page information in an image.
   class Page < Image
 
-    attr_reader :position
+    attr_reader :position, :content, :borders
 
     def initialize(data, width, height, opts)
       @options = opts
@@ -26,11 +26,11 @@ module ScanEnhancer
 
     def analyse
       @attrib[:histogram] = histogram
-      @attrib[:threshold] = rightPeak
+      @attrib[:threshold] = rightPeak[0]
 
       @borders = Borders.new(self)
       @borders.fineTuneBorders!
-      @borders.highlight(constitute, "Borders").display
+      @borders.highlight(constitute, "Borders").display if $DISPLAY
 
       @vertical_projection = Projection.new(self, Projection::VERTICAL)
       @vertical_projection.delete_small!
@@ -42,7 +42,11 @@ module ScanEnhancer
 
       @content = Content.new(self)
       @content.fineTuneContentBox!
-      @content.highlight.display
+      @content.highlight.display if $DISPLAY
+    end
+
+    def export(file_name)
+      constitute.write(file_name)
     end
   end
 end

@@ -16,8 +16,8 @@ module ScanEnhancer
 
     # Find left, top, right and bottom borders of the page
     def detect
-      xmid = @image.width / 2
-      ymid = @image.height / 2
+      xmid = (@image.width * 0.333).to_i
+      ymid = (@image.height * 0.333).to_i
       @left = detectBorder(0, @image.width-1, +1, ymid, :horizontal)
       @top = detectBorder(0, @image.height-1, +1, xmid, :vertical)
       @right = detectBorder(@image.width-1, 0, -1, ymid, :horizontal)
@@ -41,7 +41,7 @@ module ScanEnhancer
       idx = 0
       loop do
         idx = @image.index(x1, y1)
-        break if @image.data[idx] > @image.attrib[:threshold]
+        break if (idx < 0) or (idx > @image.data.size) or (@image.data[idx] > @image.attrib[:threshold])
         x1 += inc_x
         y1 += inc_y
       end

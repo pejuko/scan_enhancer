@@ -44,6 +44,24 @@ module ScanEnhancer
       img
     end
 
+    def invert(max_x, max_y)
+      boxes = []
+      boxes << Box.new(0, 0, @left-1, max_y-1) if @left > 0
+      boxes << Box.new(0, 0, max_x-1, @top-1) if @top > 0
+      boxes << Box.new(@right+1, 0, max_x-1, max_y-1) if @right < max_x
+      boxes << Box.new(0, @bottom+1, max_x-1, max_y-1) if @bottom < max_y
+      boxes
+    end
+
+    def fill(image, color = 255)
+      height.times do |y|
+        width.times do |x|
+          idx = image.index(@left+x, @top+y)
+          image.data[idx] = color
+        end
+      end
+    end
+
     def to_a
       [@left, @top, @right, @bottom]
     end

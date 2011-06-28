@@ -33,12 +33,12 @@ module ScanEnhancer
       @borders.highlight(constitute, "Borders").display if $DISPLAY
 
       @vertical_projection = Projection.new(self, Projection::VERTICAL)
-      @vertical_projection.delete_small!
       @vertical_projection.join_adjacent!
+      @vertical_projection.delete_small!
 
       @horizontal_projection = Projection.new(self, Projection::HORIZONTAL)
-      @horizontal_projection.delete_small!
       @horizontal_projection.join_adjacent!
+      @horizontal_projection.delete_small!
 
       @content = Content.new(self)
       @content.fineTuneContentBox!

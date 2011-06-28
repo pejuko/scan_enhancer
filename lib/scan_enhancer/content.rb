@@ -59,8 +59,15 @@ module ScanEnhancer
 
       vb = vp.to_boxes.sort_by{|b| b.width}.last
       hbs = hp.to_boxes
-      @left, @right = [vb.left, vb.right]
-      @top, @bottom = [hbs[0].top, hbs[-1].bottom]
+      if vb
+        @left, @right = [vb.left, vb.right]
+        @top, @bottom = [hbs[0].top, hbs[-1].bottom]
+      else
+        # empty page or wrong content detection
+        @left, @top, @right, @bottom = [0, 0, @image.width-1, @image.height-1]
+      end
+
+      self
     end
 
     # Fix bugs on given edge

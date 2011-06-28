@@ -175,7 +175,7 @@ module ScanEnhancer
           valley_sum = 0
         end
 
-        break if (valley-i > 50)
+        break if (valley-i > 70)
       end
       [valley - 1, j]
     end

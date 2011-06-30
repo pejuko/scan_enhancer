@@ -11,20 +11,20 @@ module ScanEnhancer
   # Detects pages in an image.
   class Image
     
-    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection
+    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage
 
-    def initialize img, opts={}
+    def initialize img, opts={}, page=0
       @options = opts
       @attrib = {}
       @depth = img.depth
       @filename = img.filename
-      @filepage= img.page
+      @filepage =  page
       @image_width = img.columns
       @image_height = img.rows
       @dpi = img.density.to_i
       @dpi = opts[:dpi] if opts[:force_dpi] or @dpi<100
       @data = img
-      @data = @data.scale(@options[:working_dpi].to_f/@dpi)
+      downscale!
       @width = @data.columns
       @height = @data.rows
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2)].max
@@ -32,6 +32,17 @@ module ScanEnhancer
       @borders = Box.new(0, 0, @width-1, @height-1)
       desaturate!
       @pages = []
+    end
+
+    def load_original
+      @data = Magick::Image.read(@filename)[@filepage]
+      @width = @data.columns
+      @height = @data.rows
+      desaturate!
+    end
+
+    def downscale!
+      @data = @data.scale(@options[:working_dpi].to_f/@dpi)
     end
 
     # print some image information
@@ -59,7 +70,8 @@ module ScanEnhancer
 
     # create Magick::Image from data
     def constitute(idata=@data)
-      Magick::Image.constitute(@width, @height, "I", idata.map{|pix| pix/255.0})
+      coef = Magick::QuantumRange.to_f / 255.to_f  
+      Magick::Image.constitute(@width, @height, "I", idata.map{|pix| (pix*coef).to_i})
     end
 
     # Analyse page layout and return layout information
@@ -82,7 +94,7 @@ module ScanEnhancer
       pages = []
       if (@width < @height)
         # only one page layout
-        pages << Page.new(@data, @width, @height, @options)
+        pages << Page.new(self, @data, @width, @height, @options)
       else
         # landscape => probably two page layout
         vp = Projection.new(self, Projection::VERTICAL)
@@ -101,12 +113,12 @@ module ScanEnhancer
             point = b if point==nil or b.height>point.height
           end
           split_x = point.middle[0] if point
-          pages << Page.new(cut(0, 0, split_x, @height), split_x, @height, @options)
-          pages << Page.new(cut(split_x, 0, @width, @height), @width-split_x, @height, @options)
+          pages << Page.new(self, cut(0, 0, split_x, @height), split_x, @height, @options)
+          pages << Page.new(self, cut(split_x, 0, @width, @height), @width-split_x, @height, @options)
           pages[0].position[:right] = pages[1].position[:left] = split_x.to_f/@width
         else
           # one page layout
-          pages << Page.new(@data, @width, @height, @options)
+          pages << Page.new(self, @data, @width, @height, @options)
         end
       end
 
@@ -115,7 +127,13 @@ module ScanEnhancer
 
     # Convert image color space to 8-bit grayscale
     def desaturate!
-      @data = @data.quantize(256, Magick::GRAYColorspace).dispatch(0,0,@data.columns,@data.rows,"I",true).map{|pix| (255*pix).to_i}
+      @data = @data.quantize(256, Magick::GRAYColorspace)
+      #@data = @data.dispatch(0,0,@data.columns,@data.rows,"I",true)
+      @data = @data.export_pixels(0,0,@data.columns,@data.rows,"I")
+      coef = 255.to_f / Magick::QuantumRange.to_f
+      ScanEnhancer::profile("desaturate: convert to 0-255 range") {
+        @data.map!{|pix| (pix*coef).to_i}
+      }
     end
 
     # cut rectangel from @data

@@ -15,6 +15,19 @@ module ScanEnhancer
       computeContentBox
     end
 
+    # map pod @width and @height to new @image.width/height
+    def remap!
+      return unless @width or @height
+      wcoef = @image.width.to_f / @width.to_f
+      hcoef = @image.height.to_f / @height.to_f
+      @left = (@left * wcoef).to_i
+      @right = (@right * wcoef).to_i
+      @top = (@top * hcoef).to_i
+      @bottom = (@bottom * hcoef).to_i
+      @width = @image.width
+      @height = @image.height
+    end
+
     # Fix some bugs on edges
     def fineTuneContentBox!
       l, t, r, b = @image.borders.to_a
@@ -49,6 +62,9 @@ module ScanEnhancer
     private
 
     def computeContentBox
+      @width = @image.width
+      @height = @image.height
+
       vp = @image.vertical_projection
       hp = @image.horizontal_projection
 
@@ -64,7 +80,7 @@ module ScanEnhancer
         @top, @bottom = [hbs[0].top, hbs[-1].bottom]
       else
         # empty page or wrong content detection
-        @left, @top, @right, @bottom = [0, 0, @image.width-1, @image.height-1]
+        @left, @top, @right, @bottom = [0, 0, @width-1, @height-1]
       end
 
       self

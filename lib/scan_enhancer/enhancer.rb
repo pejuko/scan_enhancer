@@ -23,9 +23,17 @@ module ScanEnhancer
     # export pages to files
     def export
       @pages.each_with_index do |page, i|
-        page.content.fill_invert
-        page.threshold!
-        page.export("page-%04d.png" % [@page_number_start + @page_number_step*i])
+        puts "Export:"
+        page.load_original
+        ScanEnhancer::profile("fill_invert") {
+          page.content.fill_invert
+        }
+        ScanEnhancer::profile("threshold") {
+          page.threshold!
+        }
+        ScanEnhancer::profile("export") {
+          page.export("page-%04d.png" % [@page_number_start + @page_number_step*i])
+        }
       end
     end
 

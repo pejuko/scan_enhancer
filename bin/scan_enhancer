@@ -53,6 +53,8 @@ GetoptLong.new(
 
 end
 
-enhancer = ScanEnhancer::Enhancer.new
-enhancer.load_files ARGV
-enhancer.export
+ScanEnhancer::profile("Total time") {
+  enhancer = ScanEnhancer::Enhancer.new
+  enhancer.load_files ARGV
+  enhancer.export
+}

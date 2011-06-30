@@ -12,8 +12,11 @@ module ScanEnhancer
 
     attr_reader :position, :content, :borders
 
-    def initialize(data, width, height, opts)
+    def initialize(image, data, width, height, opts)
       @options = opts
+      @image = image
+      @filename = @image.filename
+      @filepage = @image.filepage
       @attrib = {}
       @data = data
       @width = width
@@ -43,6 +46,11 @@ module ScanEnhancer
       @content = Content.new(self)
       @content.fineTuneContentBox!
       @content.highlight.display if $DISPLAY
+    end
+
+    def load_original
+      super
+      @content.remap!
     end
 
     def export(file_name)

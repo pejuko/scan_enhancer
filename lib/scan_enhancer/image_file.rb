@@ -21,7 +21,11 @@ module ScanEnhancer
 
     # Load images from a file and create class ScanEnhancer::Image
     def load_images
-      Magick::Image.read(@path).map!{|img| Image.new img, @options}
+      images = Magick::Image.read(@path)
+      images.size.times do |i|
+        images[i] = Image.new images[i], @options, i
+      end
+      images
     end
 
     # Get n-th image from a file.

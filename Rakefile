@@ -19,19 +19,3 @@ $:.unshift(File.expand_path File.dirname(__FILE__))
 Dir["task/**/*.rake"].each do |rake_task|
   load rake_task
 end
-
-
-
-=begin
-require 'rake/rdoctask'
-Rake::RDocTask.new do |t|
-  t.main = "README.md"
-  t.rdoc_files.include DOC_FILES
-end
-
-require 'yard'
-YARD::Rake::YardocTask.new do |t|
-  t.files = DOC_FILES
-  t.options = ['--output-dir=yardoc']
-end
-=end

@@ -54,11 +54,11 @@ module ScanEnhancer
     end
 
     def export(file_name)
-      if @data.is_a? Array
-        constitute.write(file_name)
-      else
-        @data.write(file_name)
-      end
+      img = @data
+      img = constitute if @data.is_a? Array
+      img.write(file_name) {
+        self.compression = Magick::ZipCompression
+      }
     end
   end
 end

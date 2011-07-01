@@ -31,6 +31,7 @@ module ScanEnhancer
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
       desaturate!
+      to_data!
       @pages = []
     end
 
@@ -125,9 +126,17 @@ module ScanEnhancer
       pages
     end
 
+    # Deskew Image
+    def deskew!
+      @data = @data.deskew(@attrib[:threshold].to_f/255)
+    end
+
     # Convert image color space to 8-bit grayscale
     def desaturate!
       @data = @data.quantize(256, Magick::GRAYColorspace)
+    end
+
+    def to_data!
       #@data = @data.dispatch(0,0,@data.columns,@data.rows,"I",true)
       @data = @data.export_pixels(0,0,@data.columns,@data.rows,"I")
       coef = 255.to_f / Magick::QuantumRange.to_f
@@ -152,7 +161,17 @@ module ScanEnhancer
     def cut!(x1, y1, x2, y2); @data = cut(x1,y1,x2,y2); end
 
     def threshold! t=@attrib[:threshold]
-      @data.each_with_index { |pixel, i| @data[i] = (pixel <= t) ? 0 : 255 }
+      if @data.is_a? Array
+        @data.each_with_index { |pixel, i| @data[i] = (pixel <= t) ? 0 : 255 }
+      else
+        @data = @data.threshold((t / 255.0) * Magick::QuantumRange)
+      end
+      self
+    end
+
+    # set @data to nil
+    def free_data!
+      @data = nil
     end
 
     # Return number of pages on the image
@@ -196,31 +215,6 @@ module ScanEnhancer
         break if (valley-i > 70)
       end
       [valley - 1, j]
-    end
-
-    # Detect left peak and right valley in image histogram
-    def leftPeak
-      @attrib[:histogram] ||= histogram
-#      p @attrib[:histogram]
-      j = idx = 0
-      valley = idx+1
-      max_value = @attrib[:histogram][j]
-      (idx+1).upto(255) do |i|
-        if @attrib[:histogram][i] >= max_value
-          j = i
-          max_value = @attrib[:histogram][j]
-          valley = j+1
-        elsif @attrib[:histogram][i] > 0.1*max_value
-          valley = i
-        end
-=begin
-        p @attrib[:histogram][i], 0.25*max_value
-        p "left_peak> i:#{i}, j:#{j}, valley:#{valley}, max_value:#{max_value}"
-=end
-        break if (i-valley > 15)
-      end
-      #(valley.to_f/256) * Magick::QuantumRange
-      valley
     end
 
   end

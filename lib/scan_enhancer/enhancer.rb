@@ -28,12 +28,16 @@ module ScanEnhancer
         ScanEnhancer::profile("fill_invert") {
           page.content.fill_invert
         }
+        ScanEnhancer::profile("Deskew") {
+          page.deskew!
+        }
         ScanEnhancer::profile("threshold") {
           page.threshold!
         }
         ScanEnhancer::profile("export") {
-          page.export("page-%04d.png" % [@page_number_start + @page_number_step*i])
+          page.export("page-%04d.tif" % [@page_number_start + @page_number_step*i])
         }
+        page.free_data!
       end
     end
 

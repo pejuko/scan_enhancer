@@ -54,7 +54,11 @@ module ScanEnhancer
     end
 
     def export(file_name)
-      constitute.write(file_name)
+      if @data.is_a? Array
+        constitute.write(file_name)
+      else
+        @data.write(file_name)
+      end
     end
   end
 end

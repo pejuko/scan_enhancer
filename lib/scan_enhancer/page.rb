@@ -28,23 +28,33 @@ module ScanEnhancer
     end
 
     def analyse
-      @attrib[:histogram] = histogram
-      @attrib[:threshold] = rightPeak[0]
+      ScanEnhancer::profile("get histogram and threshold") {
+        @attrib[:histogram] = histogram
+        @attrib[:threshold] = rightPeak[0]
+      }
 
-      @borders = Borders.new(self)
-      @borders.fineTuneBorders!
+      ScanEnhancer::profile("borders detect") {
+        @borders = Borders.new(self)
+        @borders.fineTuneBorders!
+      }
       @borders.highlight(constitute, "Borders").display if $DISPLAY
 
-      @vertical_projection = Projection.new(self, Projection::VERTICAL)
-      @vertical_projection.join_adjacent!
-      @vertical_projection.delete_small!
+      ScanEnhancer::profile("vertical projection") {
+        @vertical_projection = Projection.new(self, Projection::VERTICAL)
+        @vertical_projection.join_adjacent!
+        @vertical_projection.delete_small!
+      }
 
-      @horizontal_projection = Projection.new(self, Projection::HORIZONTAL)
-      @horizontal_projection.join_adjacent!
-      @horizontal_projection.delete_small!
+      ScanEnhancer::profile("horizontal projection") {
+        @horizontal_projection = Projection.new(self, Projection::HORIZONTAL)
+        @horizontal_projection.join_adjacent!
+        @horizontal_projection.delete_small!
+      }
 
-      @content = Content.new(self)
-      @content.fineTuneContentBox!
+      ScanEnhancer::profile("content detection") {
+        @content = Content.new(self)
+        @content.fineTuneContentBox!
+      }
       @content.highlight.display if $DISPLAY
     end
 

@@ -38,6 +38,7 @@ module ScanEnhancer
           page.export("page-%04d.tif" % [@page_number_start + @page_number_step*i])
         }
         page.free_data!
+        puts ""
       end
     end
 
@@ -60,6 +61,8 @@ module ScanEnhancer
         image.info
         @images << image
         @pages += image.analyse
+        image.free_data!
+        image.pages.each{|page| page.free_data!}
       end
     end
 

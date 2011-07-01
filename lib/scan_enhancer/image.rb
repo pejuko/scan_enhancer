@@ -11,7 +11,7 @@ module ScanEnhancer
   # Detects pages in an image.
   class Image
     
-    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage
+    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage, :depth
 
     def initialize img, opts={}, page=0
       @options = opts

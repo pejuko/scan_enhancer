@@ -66,8 +66,13 @@ module ScanEnhancer
     def export(file_name)
       img = @data
       img = constitute if @data.is_a? Array
+      depth = @image.depth.to_i
       img.write(file_name) {
-        self.compression = Magick::ZipCompression
+        if depth > 1
+          self.compression = Magick::ZipCompression
+        else
+          self.compression = Magick::FaxCompression
+        end
       }
     end
   end

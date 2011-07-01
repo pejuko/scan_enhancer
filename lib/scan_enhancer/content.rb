@@ -55,7 +55,7 @@ module ScanEnhancer
 
     def fill_invert
       invert(@image.width, @image.height).each do |box|
-        box.fill(@image)
+        box.fill(@image.data)
       end
     end
 

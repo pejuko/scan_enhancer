@@ -53,13 +53,12 @@ module ScanEnhancer
       boxes
     end
 
-    def fill(image, color = 255)
-      height.times do |y|
-        width.times do |x|
-          idx = image.index(@left+x, @top+y)
-          image.data[idx] = color
-        end
-      end
+    def fill(img, color = 255)
+      draw = Magick::Draw.new
+      draw.fill = "#ffff"
+      draw.stroke = "#ffff"
+      draw.rectangle(@left, @top, @right, @bottom)
+      draw.draw(img)
     end
 
     def to_a

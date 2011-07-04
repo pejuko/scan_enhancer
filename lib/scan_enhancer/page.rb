@@ -31,7 +31,6 @@ module ScanEnhancer
       ScanEnhancer::profile("get histogram and threshold") {
         @attrib[:histogram] = histogram
         @attrib[:threshold] = otsuThreshold
-        #p [@attrib[:threshold], rightPeak[0]]
       }
 
       ScanEnhancer::profile("borders detect") {
@@ -57,6 +56,11 @@ module ScanEnhancer
         @content.fineTuneContentBox!
       }
       @content.highlight.display if $DISPLAY
+
+      ScanEnhancer::profile("conected components") {
+        @components = computeConnectedComponentsMask
+      }
+      constitute(@components).display if $DISPLAY
     end
 
     def load_original

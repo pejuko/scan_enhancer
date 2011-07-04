@@ -79,7 +79,8 @@ module ScanEnhancer
     # for each page in an image.
     def analyse
       @attrib[:histogram] = histogram
-      @attrib[:threshold] = otsuThreshold
+      p(@attrib[:threshold] = otsuThreshold)
+      p rightPeak
       @pages = findPages
 
       @pages.each do |page|
@@ -169,6 +170,40 @@ module ScanEnhancer
       self
     end
 
+    def adjacentPixels(cx,cy,data)
+      env = []
+      ((cy-1)..(cy+1)).each do |y|
+        next if y<0 or y>=@height
+        ((cx-1)..(cx+1)).each do |x|
+          next if x<0 or x>=@width
+          i = index(x,y)
+          env << [x, y, i, data[i]]
+        end
+      end
+      env
+    end
+
+    def computeConnectedComponentsMask
+      peak = rightPeak
+      mask = @data.dup
+
+      @height.times do |y|
+        @width.times do |x|
+          i = index(x,y)
+          if mask[i]>@attrib[:threshold]
+            mask[i] = 255
+            next
+          end
+          env = adjacentPixels(x,y,mask)
+          env.each do |pix|
+            mask[pix[2]] = 0 if pix[3]<peak[0]
+          end
+        end
+      end
+
+      mask
+    end
+
     # set @data to nil
     def free_data!
       @data = nil
@@ -192,7 +227,6 @@ module ScanEnhancer
     # Detect right peak and right valley in image histogram
     def rightPeak
       @attrib[:histogram] ||= histogram
-#      p @attrib[:histogram]
       j = idx = 255
       valley = idx-1
       valley_sum = 0
@@ -202,7 +236,7 @@ module ScanEnhancer
           j = i
           max_value = @attrib[:histogram][j]
           valley = j-1
-          valley_sum = 0
+          valley_sum = @attrib[:histogram][valley]
         else
           valley_sum += @attrib[:histogram][i]
         end
@@ -212,7 +246,7 @@ module ScanEnhancer
           valley_sum = 0
         end
 
-        break if (valley-i > 70)
+        break if (valley-i > 20)
       end
       [valley - 1, j]
     end

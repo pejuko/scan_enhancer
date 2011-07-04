@@ -30,7 +30,8 @@ module ScanEnhancer
     def analyse
       ScanEnhancer::profile("get histogram and threshold") {
         @attrib[:histogram] = histogram
-        @attrib[:threshold] = rightPeak[0]
+        @attrib[:threshold] = otsuThreshold
+        #p [@attrib[:threshold], rightPeak[0]]
       }
 
       ScanEnhancer::profile("borders detect") {

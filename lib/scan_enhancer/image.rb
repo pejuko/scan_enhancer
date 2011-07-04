@@ -36,14 +36,14 @@ module ScanEnhancer
     end
 
     def load_original
-      @data = Magick::Image.read(@filename)[@filepage]
+      @data = Magick::Image.read(@filename)[@filepage].contrast(true)
       @width = @data.columns
       @height = @data.rows
       desaturate!
     end
 
     def downscale!
-      @data = @data.scale(@options[:working_dpi].to_f/@dpi)
+      @data = @data.scale(@options[:working_dpi].to_f/@dpi).contrast(true)
     end
 
     # print some image information
@@ -79,7 +79,7 @@ module ScanEnhancer
     # for each page in an image.
     def analyse
       @attrib[:histogram] = histogram
-      @attrib[:threshold] = rightPeak[0]
+      @attrib[:threshold] = otsuThreshold
       @pages = findPages
 
       @pages.each do |page|
@@ -215,6 +215,31 @@ module ScanEnhancer
         break if (valley-i > 70)
       end
       [valley - 1, j]
+    end
+
+    # Detect threshold value using otsu method
+    def otsuThreshold
+      num_pixels = (@width*@height).to_f
+      levels = @attrib[:histogram].size
+      pixels = [@attrib[:histogram][0]/num_pixels]
+      moment = [@attrib[:histogram][0]/num_pixels]
+      (levels-1).times do |i|
+        pi = @attrib[:histogram][i+1] / num_pixels
+        pixels[i+1] = pixels[i] + pi
+        moment[i+1] = moment[i] + (i+1)*pi
+      end
+
+      threshold = 0
+      max_variance = 0
+      levels.times do |i|
+        variance = (moment[-1]*pixels[i] - moment[i])**2 / (pixels[i]*(1-pixels[i]))
+        if variance >= max_variance
+          max_variance = variance
+          threshold = i
+        end
+      end
+
+      threshold
     end
 
   end

@@ -217,6 +217,22 @@ module ScanEnhancer
       [valley - 1, j]
     end
 
+    def display_histogram(hist)
+      max = 0
+      hist.size.times {|i| max=hist[i] if hist[i]>max}
+
+      draw = Magick::Draw.new
+      (hist.size-1).times do |x|
+        y = 100 - 100*(hist[x]/max.to_f)
+        x2, y2 = [x+1, 100 - 100*hist[x+1]/max.to_f]
+        draw.line(x, y, x2, y2)
+      end
+
+      img = Magick::Image.new(hist.size, 100)
+      draw.draw img
+      img.display
+    end
+
     # Detect threshold value using otsu method
     def otsuThreshold
       num_pixels = (@width*@height).to_f
@@ -228,6 +244,9 @@ module ScanEnhancer
         pixels[i+1] = pixels[i] + pi
         moment[i+1] = moment[i] + (i+1)*pi
       end
+      #display_histogram(histogram)
+      #display_histogram(pixels)
+      #display_histogram(moment)
 
       threshold = 0
       max_variance = 0

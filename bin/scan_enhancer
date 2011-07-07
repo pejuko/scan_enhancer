@@ -35,10 +35,12 @@ if ARGV.size == 0
 end
 
 
+opts={}
 GetoptLong.new(
   ["--help",    "-h", GetoptLong::NO_ARGUMENT],
   ["--verbose", "-v", GetoptLong::NO_ARGUMENT],
-  ["--display", "-d", GetoptLong::NO_ARGUMENT],
+  ["--display", "-D", GetoptLong::NO_ARGUMENT],
+  ["--dpi", "-d", GetoptLong::REQUIRED_ARGUMENT],
 ).each do |opt, val|
 
   key = opt[2..-1].to_sym
@@ -49,12 +51,16 @@ GetoptLong.new(
   when :display
     $DISPLAY = true
   when :test
+  when :dpi
+    opts[key] = val.to_i
+  else
+    opts[key] = val
   end
 
 end
 
 ScanEnhancer::profile("Total time") {
-  enhancer = ScanEnhancer::Enhancer.new
+  enhancer = ScanEnhancer::Enhancer.new opts
   enhancer.load_files ARGV
   enhancer.export
 }

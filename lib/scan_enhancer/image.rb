@@ -183,26 +183,6 @@ module ScanEnhancer
       env
     end
 
-    def computeConnectedComponentsMask
-      peak = rightPeak
-      mask = @data.dup
-
-      @height.times do |y|
-        @width.times do |x|
-          i = index(x,y)
-          if mask[i]>@attrib[:threshold]
-            mask[i] = 255
-            next
-          end
-          env = adjacentPixels(x,y,mask)
-          env.each do |pix|
-            mask[pix[2]] = 0 if pix[3]<peak[0]
-          end
-        end
-      end
-
-      mask
-    end
 
     # set @data to nil
     def free_data!

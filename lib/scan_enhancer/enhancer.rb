@@ -14,7 +14,7 @@ module ScanEnhancer
 
     # Create an Enhancer instance and set the options
     def initialize opts={}
-      @options = {:dpi=>300, :output_dpi=>300, :working_dpi=>150, :force_dpi=>false, :threads=>1, :verbose=>true}.merge opts
+      @options = {:dpi=>600, :output_dpi=>300, :working_dpi=>150, :force_dpi=>false, :threads=>1, :verbose=>true}.merge opts
       @page_number_start = 1
       @page_number_step = 1
       @files, @images, @pages  = [], [], []
@@ -28,9 +28,9 @@ module ScanEnhancer
         ScanEnhancer::profile("fill_invert") {
           page.content.fill_invert
         }
-        ScanEnhancer::profile("Deskew") {
-          page.deskew!
-        }
+#        ScanEnhancer::profile("Deskew") {
+#          page.deskew!
+#        }
         ScanEnhancer::profile("threshold") {
           page.threshold!
         }

@@ -19,17 +19,52 @@ module ScanEnhancer
     end
 
     def +(box)
+      self.class.new(*plus(box))
+    end
+    alias :join :+
+
+    def join!(box)
+      @left, @top, @right, @bottom = plus(box)
+    end
+
+    def plus(box)
       left = [@left, box.left].min
       top = [@top, box.top].min
       right = [@right, box.right].max
       bottom = [@bottom, box.bottom].max
-      self.class.new(left, top, right, bottom)
+      [left, top, right, bottom]
     end
-    alias :join :+
 
     def width;  @right  - @left + 1; end
     def height; @bottom - @top  + 1; end
     def middle; [(@right+@left)/2, (@bottom+@top)/2]; end
+
+    def dist(b)
+      x, y = [0,0]
+
+      if @right < b.left
+        x = b.left - @right
+      elsif @left > b.right
+        x = @left - b.right
+      end
+
+      if @bottom < b.top
+        y = b.top - @bottom
+      elsif @top > b.bottom
+        y =  @top - b.bottom
+      end
+
+      [x,y]
+    end
+
+    def intersect?(b)
+      return false if (@right<b.left) or (@left>b.right) or (@top>b.bottom) or (@bottom<b.top)
+      true
+    end
+
+    def include?(x, y)
+      (x >= @left) and (x <= @right) and (y >= @top) and (y <= @bottom)
+    end
 
     # Draw rectangle to the img using STOKE and FILL colors
     def highlight(img, msg=nil)

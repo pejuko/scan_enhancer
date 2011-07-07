@@ -9,6 +9,7 @@ Scan Enhancer=$INDEXER_PROJECT_ROOT CD=. {
   lib=lib/scan_enhancer CD=. filter="*.rb **/*.rb" {
     borders.rb
     box.rb
+    components.rb
     content.rb
     enhancer.rb
     image.rb

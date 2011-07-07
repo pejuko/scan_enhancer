@@ -26,6 +26,8 @@ module ScanEnhancer
   autoload :Box,        'lib/scan_enhancer/box.rb'
   autoload :Projection, 'lib/scan_enhancer/projection.rb'
   autoload :Content,    'lib/scan_enhancer/content.rb'
+  autoload :Component,  'lib/scan_enhancer/components.rb'
+  autoload :Components, 'lib/scan_enhancer/components.rb'
   autoload :Borders,    'lib/scan_enhancer/borders.rb'
   autoload :Image,      'lib/scan_enhancer/image.rb'
   autoload :Page,       'lib/scan_enhancer/page.rb'

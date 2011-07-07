@@ -58,9 +58,16 @@ module ScanEnhancer
       @content.highlight.display if $DISPLAY
 
       ScanEnhancer::profile("conected components") {
-        @components = computeConnectedComponentsMask
+        @components = Components.new(self)
       }
-      constitute(@components).display if $DISPLAY
+      @words = @components.words
+      @lines = @words.lines
+      @speckles = @lines.speckles(@min_obj_size*2)
+      @components.display_components.display # if $DISPLAY
+      @words.display_components.display
+      @lines.display_components.display
+      @speckles.display_components.display
+      (@lines - @speckles).display_components.display
     end
 
     def load_original

@@ -60,6 +60,25 @@ module ScanEnhancer
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
       }
+      @lines = @components.get_lines
+      img = constitute
+      gc = Magick::Draw.new
+      p @lines.size
+      @lines.each do |g|
+        g.display_components(img)
+        g.each_with_index do |c,i|
+          if i>0
+            x1 = g[i-1].middle[0]
+            y1 = g[i-1].bottom
+            x2 = g[i].middle[0]
+            y2 = g[i].bottom
+            gc.line( x1, y1, x2, y2 )
+          end
+        end
+      end
+      gc.draw(img)
+      img.display
+=begin
       @words = @components.words
       @lines = @words.lines
       @speckles = @lines.speckles(@min_obj_size*2)
@@ -68,6 +87,7 @@ module ScanEnhancer
       @lines.display_components.display
       @speckles.display_components.display
       (@lines - @speckles).display_components.display
+=end
     end
 
     def load_original

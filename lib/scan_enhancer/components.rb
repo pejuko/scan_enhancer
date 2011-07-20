@@ -85,6 +85,23 @@ module ScanEnhancer
       Components.new(@image, s)
     end
 
+    def get(hdist=0.5, vdist=1)
+      result = []
+      get_group = lambda{|c| result.each {|g| return g if g.include?(c)}; g = Components.new @image, []; result << g; g}
+      group = []
+      each do |c|
+        group = get_group.call(c)
+        each do |c2|
+          next if group.include?(c2)
+          d = c.dist(c2)
+          if d[0]<=hdist and d[1]<=vdist
+            group.push c2
+          end
+        end
+      end
+      result.map!{|g| g.sort_by!{|c| c.middle}}
+    end
+
     def connect(hdist=0.5, vdist=1)
       comp = Components.new(@image, [])
       each do |c|
@@ -102,8 +119,16 @@ module ScanEnhancer
       connect(7, 1)
     end
 
+    def get_words
+      get(7,1)
+    end
+
     def lines
       connect(20, 0)
+    end
+
+    def get_lines
+      get(20, 0)
     end
 
     def display_components(img=@image.constitute)

@@ -28,9 +28,9 @@ module ScanEnhancer
         ScanEnhancer::profile("fill_invert") {
           page.content.fill_invert
         }
-#        ScanEnhancer::profile("Deskew") {
-#          page.deskew!
-#        }
+        ScanEnhancer::profile("Deskew") {
+          page.deskew!
+        }
         ScanEnhancer::profile("threshold") {
           page.threshold!
         }

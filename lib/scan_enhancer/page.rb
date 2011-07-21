@@ -60,12 +60,16 @@ module ScanEnhancer
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
       }
-      @lines = @components.get_lines
+      ScanEnhancer::profile("get_lines") {
+        @lines = @components.get_lines
+      }
       img = constitute
       gc = Magick::Draw.new
       p @lines.size
-      @lines.each do |g|
-        g.display_components(img)
+      #@lines.highlight img
+      @lines.each_with_index do |g,j|
+        #g.display_components(img)
+        g.highlight img, j.to_s
         g.each_with_index do |c,i|
           if i>0
             x1 = g[i-1].middle[0]

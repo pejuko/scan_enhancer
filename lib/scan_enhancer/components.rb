@@ -13,13 +13,18 @@ module ScanEnhancer
   # TODO: speckles, connect, lines, words, detect should use @image.obj_min_size
   class Components < Array
 
+    attr_reader :bbox
+
     def initialize(img,components=nil)
       super()
       @image = img
+      @bbox = nil
       if components
         replace(components)
+        bounding_box!
       elsif img
         compute_connected_components
+        bounding_box!
       end
     end
 
@@ -44,7 +49,7 @@ module ScanEnhancer
           self << Component.new(x1, y1, x2, y2)
         end
       end
-      #sort_by!{|c| c.middle}
+      #sort_by!{|c| c.middle.reverse}
       p "components: #{size}"
       self
     end
@@ -87,19 +92,22 @@ module ScanEnhancer
 
     def get(hdist=0.5, vdist=1)
       result = []
-      get_group = lambda{|c| result.each {|g| return g if g.include?(c)}; g = Components.new @image, []; result << g; g}
+      get_group = lambda{|c| result.each {|g| return g if g.include?(c)}; g = Components.new @image, [c]; result << g; g}
       group = []
       each do |c|
         group = get_group.call(c)
         each do |c2|
           next if group.include?(c2)
-          d = c.dist(c2)
+          d = group.bbox.dist(c2)
           if d[0]<=hdist and d[1]<=vdist
             group.push c2
           end
         end
       end
-      result.map!{|g| g.sort_by!{|c| c.middle}}
+      #result.each{|g| g.sort_by!{|c| c.middle.reverse}}
+      #result.sort_by!{|g| g.first.middle.reverse}
+      result.each{|g| g.bounding_box!}
+      Components.new @image, result
     end
 
     def connect(hdist=0.5, vdist=1)
@@ -128,7 +136,34 @@ module ScanEnhancer
     end
 
     def get_lines
-      get(20, 0)
+      get(50, 0).each{|g| g.sort_by!{|c| c.middle[0]}}
+    end
+
+    def bounding_box!
+      return if empty?
+
+      left = top = 9999999999
+      right = bottom = 0
+
+      each do |e|
+        c = e
+        c = e.bbox if e.class == Components
+        left = c.left if c.left < left
+        top = c.top if c.top < top
+        right = c.right if c.right > right
+        bottom = c.bottom if c.bottom > bottom
+      end
+
+      @bbox = Box.new left, top, right, bottom
+    end
+
+
+
+    def highlight(img=@image.constitute, msg=nil)
+      each do |c|
+        c.highlight img, msg
+      end if first.class == Components
+      @bbox.highlight img, msg
     end
 
     def display_components(img=@image.constitute)

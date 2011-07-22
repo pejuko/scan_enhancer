@@ -25,6 +25,7 @@ module ScanEnhancer
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2) + 1].max
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
+      info
     end
 
     def analyse

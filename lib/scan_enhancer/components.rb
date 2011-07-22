@@ -90,23 +90,36 @@ module ScanEnhancer
       Components.new(@image, s)
     end
 
+    def push(*args)
+      c = args.first
+      unless @bbox
+        @bbox = c.dup
+      else
+        @bbox.left = c.left if c.left < @bbox.left
+        @bbox.right = c.right if c.right > @bbox.right
+        @bbox.top = c.top if c.top < @bbox.top
+        @bbox.bottom = c.bottom if c.bottom > @bbox.bottom
+      end 
+      super *args
+    end
+
     def get(hdist=0.5, vdist=1)
       result = []
       get_group = lambda{|c| result.each {|g| return g if g.include?(c)}; g = Components.new @image, [c]; result << g; g}
       group = []
-      each do |c|
+      all = self.dup
+      each_with_index do |c,i|
         group = get_group.call(c)
-        each do |c2|
+        all.each_with_index do |c2,j|
           next if group.include?(c2)
-          d = group.bbox.dist(c2)
+          d = c.dist(c2)
           if d[0]<=hdist and d[1]<=vdist
             group.push c2
+            all.delete_at(j)
           end
         end
       end
-      #result.each{|g| g.sort_by!{|c| c.middle.reverse}}
-      #result.sort_by!{|g| g.first.middle.reverse}
-      result.each{|g| g.bounding_box!}
+      #result.each{|g| g.bounding_box!}
       Components.new @image, result
     end
 
@@ -136,7 +149,34 @@ module ScanEnhancer
     end
 
     def get_lines
-      get(50, 0).each{|g| g.sort_by!{|c| c.middle[0]}}
+      lines = get(50, 0)
+      intersected = true
+      while intersected
+        intersected = false
+        lines.each_with_index do |l,i|
+          lines.each_with_index do |l2,j|
+            next if l == l2
+            lm = l.bbox.middle
+            lm2 = l2.bbox.middle
+            next if (lm[1] - lm2[1]).abs > @image.min_obj_size
+            d = l.bbox.dist(l2.bbox)
+            next if d[0] > @image.min_obj_size
+            lines.delete_at(j)
+            intersected = true
+            l2.each do |c|
+              l.push c
+            end
+          end
+        end
+      end
+      by_height = lines.sort_by{|l| l.bbox.height}
+      ref_height = by_height[by_height.size/2]
+      lines.delete_if{|l| ((l.bbox.height-2*@image.min_obj_size) > ref_height.bbox.height) or (l.bbox.height<2*@image.min_obj_size)}
+      by_width = lines.sort_by{|l| l.bbox.width}
+      ref_width = by_width[(by_width.size*0.8).to_i]
+      lines.delete_if{|l| (l.bbox.width < ref_width.bbox.width)}
+      lines.each{|g| g.sort_by!{|c| c.middle[0]}}
+      lines
     end
 
     def bounding_box!

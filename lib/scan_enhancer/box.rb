@@ -12,7 +12,7 @@ module ScanEnhancer
     STROKE = "#f00f"
     FILL = "#fff0"
 
-    attr_reader :left, :top, :right, :bottom
+    attr_accessor :left, :top, :right, :bottom
 
     def initialize(left, top, right, bottom)
       @left, @top, @right, @bottom = [left, top, right, bottom]

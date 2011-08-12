@@ -85,10 +85,12 @@ module ScanEnhancer
         }
         first = search_similar.call(nci,-1,-1)
         last = search_similar.call(nci,1,line.size)
-        c = last.middle[0] - first.middle[0]
-        b = first.bottom - last.bottom
-        angle = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
-        angles << angle
+        if first!=last
+          c = last.middle[0] - first.middle[0]
+          b = first.bottom - last.bottom
+          angle = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
+          angles << angle
+        end
         nc.highlight img
         first.highlight img
         last.highlight img
@@ -96,9 +98,8 @@ module ScanEnhancer
       end
       p angles
       angles.sort_by!{|a| a.abs}
-      @angle = angles.first
+      @angle = angles.first.to_i
       p @angle
-=begin
       #@lines.highlight img
       @lines.each_with_index do |g,j|
         #g.display_components(img)
@@ -113,7 +114,6 @@ module ScanEnhancer
           end
         end
       end
-=end
       gc.draw(img)
       img.display
 =begin

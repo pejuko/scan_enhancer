@@ -62,5 +62,5 @@ end
 ScanEnhancer::profile("Total time") {
   enhancer = ScanEnhancer::Enhancer.new opts
   enhancer.load_files ARGV
-  enhancer.export
+  #enhancer.export
 }

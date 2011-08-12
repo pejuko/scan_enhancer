@@ -129,7 +129,8 @@ module ScanEnhancer
 
     # Deskew Image
     def deskew!
-      @data = @data.deskew(@attrib[:threshold].to_f/255)
+      #@data = @data.deskew(@attrib[:threshold].to_f/255)
+      @data = @data.rotate(-1*@angle)
     end
 
     # Convert image color space to 8-bit grayscale

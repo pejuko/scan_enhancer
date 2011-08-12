@@ -10,7 +10,7 @@ module ScanEnhancer
   # Detected page information in an image.
   class Page < Image
 
-    attr_reader :position, :content, :borders
+    attr_reader :position, :content, :borders, :angle
 
     def initialize(image, data, width, height, opts)
       @options = opts
@@ -25,6 +25,7 @@ module ScanEnhancer
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2) + 1].max
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
+      @angle = 0
       info
     end
 
@@ -66,7 +67,38 @@ module ScanEnhancer
       }
       img = constitute
       gc = Magick::Draw.new
-      p @lines.size
+      angles = []
+      @lines.each_with_index do |line|
+        height = line.bbox.height
+        nc = line.sort_by{|c| c.bottom}[line.size/2]
+        nci = line.index(nc)
+        search_similar = lambda{|i,inc,max|
+          tmp = line[i]
+          while i!=max
+            c = line[i]
+            if ((tmp.bottom-c.bottom).abs < @min_obj_size/2) and (c.height > height/2)
+              tmp = c
+            end
+            i += inc
+          end
+          tmp
+        }
+        first = search_similar.call(nci,-1,-1)
+        last = search_similar.call(nci,1,line.size)
+        c = last.middle[0] - first.middle[0]
+        b = first.bottom - last.bottom
+        angle = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
+        angles << angle
+        nc.highlight img
+        first.highlight img
+        last.highlight img
+        gc.line(first.middle[0], first.bottom, last.middle[0], last.bottom)
+      end
+      p angles
+      angles.sort_by!{|a| a.abs}
+      @angle = angles.first
+      p @angle
+=begin
       #@lines.highlight img
       @lines.each_with_index do |g,j|
         #g.display_components(img)
@@ -81,6 +113,7 @@ module ScanEnhancer
           end
         end
       end
+=end
       gc.draw(img)
       img.display
 =begin

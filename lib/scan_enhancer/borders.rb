@@ -41,7 +41,7 @@ module ScanEnhancer
       idx = 0
       loop do
         idx = @image.index(x1, y1)
-        break if (idx < 0) or (idx > @image.data.size) or (@image.data[idx] > @image.attrib[:threshold])
+        break if (idx < 0) or (idx >= @image.data.size) or (@image.data[idx] > @image.attrib[:threshold])
         x1 += inc_x
         y1 += inc_y
       end

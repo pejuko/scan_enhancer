@@ -149,6 +149,7 @@ module ScanEnhancer
     end
 
     def get_lines
+      GC.disable
       lines = get(50, 0)
       intersected = true
       while intersected
@@ -176,6 +177,7 @@ module ScanEnhancer
       ref_width = by_width[(by_width.size*0.8).to_i]
       lines.delete_if{|l| (l.bbox.width < ref_width.bbox.width)}
       lines.each{|g| g.sort_by!{|c| c.middle[0]}}
+      GC.enable
       lines
     end
 

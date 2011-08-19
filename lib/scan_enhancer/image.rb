@@ -11,7 +11,7 @@ module ScanEnhancer
   # Detects pages in an image.
   class Image
     
-    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage, :depth
+    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage, :depth, :image_width, :image_height
 
     def initialize img, opts={}, page=0
       @options = opts
@@ -72,7 +72,10 @@ module ScanEnhancer
     # create Magick::Image from data
     def constitute(idata=@data)
       coef = Magick::QuantumRange.to_f / 255.to_f  
-      Magick::Image.constitute(@width, @height, "I", idata.map{|pix| (pix*coef).to_i})
+      #GC.disable
+      img = Magick::Image.constitute(@width, @height, "I", idata.map{|pix| (pix*coef).to_i})
+      #GC.enable
+      img
     end
 
     # Analyse page layout and return layout information
@@ -130,7 +133,9 @@ module ScanEnhancer
     # Deskew Image
     def deskew!
       #@data = @data.deskew(@attrib[:threshold].to_f/255)
+      GC.disable
       @data = @data.rotate(-1*@angle)
+      GC.enable
     end
 
     # Convert image color space to 8-bit grayscale
@@ -140,11 +145,13 @@ module ScanEnhancer
 
     def to_data!
       #@data = @data.dispatch(0,0,@data.columns,@data.rows,"I",true)
+      #GC.disable
       @data = @data.export_pixels(0,0,@data.columns,@data.rows,"I")
       coef = 255.to_f / Magick::QuantumRange.to_f
       ScanEnhancer::profile("desaturate: convert to 0-255 range") {
         @data.map!{|pix| (pix*coef).to_i}
       }
+      #GC.enable
     end
 
     # cut rectangel from @data

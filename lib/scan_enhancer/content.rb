@@ -28,6 +28,11 @@ module ScanEnhancer
       @height = @image.height
     end
 
+    # map values to <0..1> and return as an array
+    def to_f(w=1.0, h=1.0)
+      super(@image.width, @image.height, w, h)
+    end
+
     # Fix some bugs on edges
     def fineTuneContentBox!
       l, t, r, b = @image.borders.to_a

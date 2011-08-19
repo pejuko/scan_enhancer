@@ -65,8 +65,10 @@ module ScanEnhancer
       ScanEnhancer::profile("get_lines") {
         @lines = @components.get_lines
       }
-      img = constitute
-      gc = Magick::Draw.new
+      if $DISPLAY
+        img = constitute
+        gc = Magick::Draw.new
+      end
       angles = []
       @lines.each_with_index do |line|
         height = line.bbox.height
@@ -76,7 +78,7 @@ module ScanEnhancer
           tmp = line[i]
           while i!=max
             c = line[i]
-            if ((tmp.bottom-c.bottom).abs < @min_obj_size/2) and (c.height > height/2)
+            if ((tmp.bottom-c.bottom).abs <= @min_obj_size/2) and (c.height > height*0.6)
               tmp = c
             end
             i += inc
@@ -85,37 +87,45 @@ module ScanEnhancer
         }
         first = search_similar.call(nci,-1,-1)
         last = search_similar.call(nci,1,line.size)
+        angle = 0.0
         if first!=last
           c = last.middle[0] - first.middle[0]
           b = first.bottom - last.bottom
           angle = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
           angles << angle
         end
-        nc.highlight img
-        first.highlight img
-        last.highlight img
-        gc.line(first.middle[0], first.bottom, last.middle[0], last.bottom)
+        if $DISPLAY
+          nc.highlight img
+          first.highlight img
+          last.highlight img
+          gc.line(first.middle[0], first.bottom, last.middle[0], last.bottom)
+          line.highlight img, "#{angle}"
+        end
       end
-      p angles
       angles.sort_by!{|a| a.abs}
-      @angle = angles.first.to_i
+      p angles
+      @angle = angles.first
       p @angle
       #@lines.highlight img
-      @lines.each_with_index do |g,j|
-        #g.display_components(img)
-        g.highlight img, j.to_s
-        g.each_with_index do |c,i|
-          if i>0
-            x1 = g[i-1].middle[0]
-            y1 = g[i-1].bottom
-            x2 = g[i].middle[0]
-            y2 = g[i].bottom
-            gc.line( x1, y1, x2, y2 )
+      if $DISPLAY2
+        @lines.each_with_index do |g,j|
+          #g.display_components(img)
+          g.highlight img, j.to_s
+          g.each_with_index do |c,i|
+            if i>0
+              x1 = g[i-1].middle[0]
+              y1 = g[i-1].bottom
+              x2 = g[i].middle[0]
+              y2 = g[i].bottom
+              gc.line( x1, y1, x2, y2 )
+            end
           end
         end
       end
-      gc.draw(img)
-      img.display
+      if $DISPLAY
+        gc.draw(img)
+        img.display
+      end
 =begin
       @words = @components.words
       @lines = @words.lines
@@ -134,6 +144,43 @@ module ScanEnhancer
     end
 
     def export(file_name)
+      iw = @image.image_width * (@position[:right] - @position[:left])
+      ih = @image.image_height * (@position[:bottom] - @position[:top])
+      c = @content.to_f(iw, ih).map{|x| x.to_i}
+      b = @borders.to_f(iw, ih).map{|x| x.to_i}
+
+      if @position[:left] > 0
+        s = @image.image_width * @position[:left]
+        c[0] += s
+        c[2] += s
+        b[0] += s
+        b[2] += s
+      end
+      #if @position[:right] < 1
+      #  c[2] -= @image.image_width * (1-@position[:right])
+      #end
+
+      chop = "-fill white"
+      chop += %~ -draw "rectangle 0,0 #{iw},#{c[1]-1}"~
+      chop += %~ -draw "rectangle 0,0 #{c[0]-1},#{@image.image_height}"~
+      chop += %~ -draw "rectangle 0,#{c[3]+1} #{@image.image_width},#{@image.image_height}"~
+      chop += %~ -draw "rectangle #{c[2]+1},0 #{@image.image_width},#{@image.image_height}"~
+
+      w = b[2]-b[0]
+      h = b[3]-b[1]
+      crop = %~-crop "#{w}x#{h}+#{b[0]}+#{b[1]}"~
+
+      rotate = %~-rotate #{@angle}~
+      threshold = %~-threshold #{@attrib[:threshold]}~
+
+      src = "#{@image.filename}[#{@image.filepage}]"
+      cmd = %~gm convert #{src} #{chop} #{crop} #{rotate} #{threshold} #{file_name}~
+#      cmd = %~gm convert "#{@image.filename}[#{@image.filepage}]" -crop "#{c[2]-c[0]}x#{c[3]-c[1]}+#{c[0]}+#{c[1]}" -rotate #{@angle} -threshold #{@attrib[:threshold]} #{file_name}~
+      puts cmd
+      system cmd
+
+=begin
+      GC.disable
       img = @data
       img = constitute if @data.is_a? Array
       depth = @image.depth.to_i
@@ -144,6 +191,8 @@ module ScanEnhancer
           self.compression = Magick::FaxCompression
         end
       }
+      GC.enable
+=end
     end
   end
 end

@@ -24,6 +24,7 @@ module ScanEnhancer
     def export
       @pages.each_with_index do |page, i|
         puts "Export:"
+=begin
         page.load_original
         ScanEnhancer::profile("fill_invert") {
           page.content.fill_invert
@@ -34,6 +35,7 @@ module ScanEnhancer
         ScanEnhancer::profile("threshold") {
           page.threshold!
         }
+=end
         ScanEnhancer::profile("export") {
           page.export("page-%04d.tif" % [@page_number_start + @page_number_step*i])
         }

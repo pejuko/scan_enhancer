@@ -73,7 +73,7 @@ module ScanEnhancer
       if msg
         x = (@left + @right) / 2
         y = (@top + @bottom) / 2
-        context = drawContext.text_align(Magick::CenterAlign).text(x, y, msg)
+        context = textContext.text_align(Magick::CenterAlign).text(x, y, msg)
         context.draw(img)
       end
       img
@@ -100,12 +100,27 @@ module ScanEnhancer
       [@left, @top, @right, @bottom]
     end
 
+    def to_f(iw,ih,w=1.0,h=1.0)
+      [(@left.to_f/iw)*w, (@top.to_f/ih)*h, (@right.to_f/iw)*w, (@bottom.to_f/ih)*h]
+    end
+
   private
     
     def drawContext
       draw = Magick::Draw.new
       draw.fill = FILL
       draw.stroke = STROKE
+      draw
+    end
+
+    def textContext
+      draw = Magick::Draw.new
+      draw.fill = '#00ff'
+      draw.stroke = '#00ff'
+      draw.font_weight = Magick::NormalWeight
+      draw.font_stretch = Magick::NormalStretch
+      draw.font_style= Magick::NormalStyle
+      draw.text_undercolor '#ccca'
       draw
     end
 

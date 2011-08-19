@@ -33,6 +33,10 @@ module ScanEnhancer
       fineTuneBorderCorner!(:right, :bottom, -1, -1)
     end
 
+    # map values to <0..1> and return as an array
+    def to_f(w=1.0, h=1.0)
+      super(@image.width, @image.height, w, h)
+    end
 
   private
     # Remove black corner
@@ -86,6 +90,5 @@ module ScanEnhancer
       end
       border
     end
-
   end
 end

@@ -40,6 +40,7 @@ GetoptLong.new(
   ["--help",    "-h", GetoptLong::NO_ARGUMENT],
   ["--verbose", "-v", GetoptLong::NO_ARGUMENT],
   ["--display", "-D", GetoptLong::NO_ARGUMENT],
+  ["--force_dpi", "-f", GetoptLong::NO_ARGUMENT],
   ["--dpi", "-d", GetoptLong::REQUIRED_ARGUMENT]
 ).each do |opt, val|
 
@@ -50,6 +51,8 @@ GetoptLong.new(
     exit 0
   when :display
     $DISPLAY = true
+  when :force_dpi
+    opts[key] = true
   when :test
   when :dpi
     opts[key] = val.to_i
@@ -62,5 +65,5 @@ end
 ScanEnhancer::profile("Total time") {
   enhancer = ScanEnhancer::Enhancer.new opts
   enhancer.load_files ARGV
-  #enhancer.export
+  enhancer.export
 }

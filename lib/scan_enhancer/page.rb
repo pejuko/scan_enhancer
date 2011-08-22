@@ -65,7 +65,7 @@ module ScanEnhancer
       ScanEnhancer::profile("get_lines") {
         @lines = @components.get_lines
       }
-      if $DISPLAY
+      if $DISPLAY or $DEBUG
         img = constitute
         gc = Magick::Draw.new
       end
@@ -94,7 +94,7 @@ module ScanEnhancer
           angle = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
           angles << angle
         end
-        if $DISPLAY
+        if $DISPLAY or $DEBUG
           nc.highlight img
           first.highlight img
           last.highlight img
@@ -122,7 +122,7 @@ module ScanEnhancer
           end
         end
       end
-      if $DISPLAY
+      if $DISPLAY or $DEBUG
         gc.draw(img)
         img.display
       end
@@ -170,14 +170,21 @@ module ScanEnhancer
       h = b[3]-b[1]
       crop = %~-crop "#{w}x#{h}+#{b[0]}+#{b[1]}"~
 
-      rotate = %~-rotate #{@angle}~
-      threshold = %~-threshold #{@attrib[:threshold]}~
+      rotate = ""
+      if @angle
+        rotate = %~-rotate "#{@angle}"~
+        threshold = %~-threshold #{@attrib[:threshold]}~
+      end
 
-      src = "#{@image.filename}[#{@image.filepage}]"
+      if @image.filename =~ /.pdf$/i
+        src = "#{@image.filename}[#{@image.filepage}]"
+      else
+        src = @image.filename
+      end
       cmd = %~gm convert #{src} #{chop} #{crop} #{rotate} #{threshold} #{file_name}~
 #      cmd = %~gm convert "#{@image.filename}[#{@image.filepage}]" -crop "#{c[2]-c[0]}x#{c[3]-c[1]}+#{c[0]}+#{c[1]}" -rotate #{@angle} -threshold #{@attrib[:threshold]} #{file_name}~
       puts cmd
-      system cmd
+      system(cmd)
 
 =begin
       GC.disable

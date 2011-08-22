@@ -31,12 +31,11 @@ module ScanEnhancer
     def compute_connected_components
       #peak = @image.rightPeak
       threshold = @image.attrib[:threshold]
-      vmos = (@image.min_obj_size/2.0)#-0.25
+      vmos = (@image.min_obj_size/2)
       hmos = vmos * 0.6
       #vmos = 1
       #hmos = 0.5
       b = @image.borders
-
       b.height.times do |by|
         b.width.times do |bx|
           x,y = [bx+b.left, by+b.top]
@@ -149,7 +148,7 @@ module ScanEnhancer
     end
 
     def get_lines
-      GC.disable
+      #GC.disable
       lines = get(50, 0)
       intersected = true
       while intersected
@@ -177,7 +176,7 @@ module ScanEnhancer
       ref_width = by_width[(by_width.size*0.8).to_i]
       lines.delete_if{|l| (l.bbox.width < ref_width.bbox.width)}
       lines.each{|g| g.sort_by!{|c| c.middle[0]}}
-      GC.enable
+      #GC.enable
       lines
     end
 

@@ -31,23 +31,85 @@ module ScanEnhancer
     def compute_connected_components
       #peak = @image.rightPeak
       threshold = @image.attrib[:threshold]
-      vmos = (@image.min_obj_size/2)
-      hmos = vmos * 0.6
-      #vmos = 1
-      #hmos = 0.5
+      vmos = [1,(@image.min_obj_size/2)].max
+      hmos = [1,vmos * 0.6].max
+#      vmos = @image.min_obj_size + 1
+#      hmos = vmos
       b = @image.borders
       b.height.times do |by|
+        #display_components.display if size>0
+        c = nil
+        lcs = []
+#        p by
         b.width.times do |bx|
           x,y = [bx+b.left, by+b.top]
           i = @image.index(x,y)
           next if @image.data[i]>threshold
-          x1 = [0,x-hmos].max
-          y1 = [0,y-vmos].max
-          x2 = [b.right, x+hmos].min
-          y2 = [b.bottom, y+vmos].min
-          self << Component.new(x1, y1, x2, y2)
+          if c==nil or (bx-c.right)>hmos
+            c = Component.new(x,y,x,y)
+            lcs.push c
+          else
+            c.right = bx
+          end
+        end
+#        p "components: #{size}"
+#        p "hcomps: #{lcs.size}"
+        ucs = select{|a| (by-a.bottom)<=vmos}
+#        p "ucs: #{ucs.size}"
+        lcs.each_with_index do |lc,i|
+          uj = []
+          #p lc
+          ucs.each do |uc|
+            #p uc
+            next if lc.left>(uc.right+hmos) or lc.right<(uc.left-hmos)
+            uj << uc
+          end
+          if uj.empty?
+            push lc
+          else
+            u = uj.shift
+            u.join!(lc)
+            uj.each{|a| u.join!(a)}
+#            lcs.delete(lc)
+          end
+        end
+=begin
+          ucs.each do |uc|
+#          jucs = ucs.select{|a| a!=uc and uc.right>=a.left}
+            jucs = ucs.select{|a| a.intersect?(uc)}
+            jucs.delete(uc)
+#            break if jucs.empty?
+            jucs.each do |j|
+              uc.join!(j)
+              ucs.delete(j)
+              delete(j)
+            end
+          end
+=end
+#        p "ucs: #{ucs.size}"
+#        p "lcs: #{lcs.size}"
+#        lcs.each{|a| push a}
+#        lcs.each{|a| self << a}
+#        p "components: #{size}"
+#        puts ""
+      end
+=begin
+      joined = true
+      while joined
+        p size
+        joined = false
+        each do |c|
+          jcs = select{|a| a.intersect?(c)}
+          jcs.delete(c)
+          next if jcs.empty?
+          joined = true
+          jcs.each do |jc|
+            c.join!(jc)
+            delete(jc)
+          end
         end
       end
+=end
       #sort_by!{|c| c.middle.reverse}
       p "components: #{size}"
       self
@@ -104,6 +166,22 @@ module ScanEnhancer
 
     def get(hdist=0.5, vdist=1)
       result = []
+      ScanEnhancer::profile("get") {
+        all = self.dup
+        all.each do |c|
+          group = Components.new @image, [c]
+          while true
+            jcs = all.select{|a| d = a.dist(group.bbox); d[0]<=hdist and d[1]<=vdist}
+            break if jcs.empty?
+            jcs.each do |jc|
+              group.push(jc)
+              all.delete(jc)
+            end
+          end
+          result << group
+        end
+        p result.size
+=begin
       get_group = lambda{|c| result.each {|g| return g if g.include?(c)}; g = Components.new @image, [c]; result << g; g}
       group = []
       all = self.dup
@@ -118,6 +196,8 @@ module ScanEnhancer
           end
         end
       end
+=end
+      }
       #result.each{|g| g.bounding_box!}
       Components.new @image, result
     end
@@ -127,6 +207,7 @@ module ScanEnhancer
       each do |c|
         newc = c.dup
         each do |c2|
+          next if c==c2
           d = newc.dist(c2)
           newc.join!(c2) if d[0]<=hdist and d[1]<=vdist
         end
@@ -149,7 +230,37 @@ module ScanEnhancer
 
     def get_lines
       #GC.disable
-      lines = get(50, 0)
+      lines = []
+      result = []
+        all = self.dup
+        all.each do |c|
+          group = Components.new @image, [c]
+          while true
+            jcs = all.select{|a| d = a.dist(group.bbox); d[0]<=10 and (a.middle[1]-group.bbox.middle[1]).abs<=@image.min_obj_size}
+            break if jcs.empty?
+            jcs.each do |jc|
+              group.push(jc)
+              all.delete(jc)
+            end
+          end
+          result << group
+        end
+
+=begin
+      result.each do |l|
+        lm = l.middle
+        jls = result.select{|a| am=a.middle; (lm[1]-am[1]).abs<@image.min_obj_size and a.dist(l)[0]==0}
+        jls.each do |jl|
+          next if jl==l
+          jl.each do |jc|
+            jls.push jc
+          end
+          result.delete(jl)
+        end
+      end
+      lines = Components.new @image, result
+
+#      lines = get(50, 0)
       intersected = true
       while intersected
         intersected = false
@@ -169,6 +280,7 @@ module ScanEnhancer
           end
         end
       end
+=end
       by_height = lines.sort_by{|l| l.bbox.height}
       ref_height = by_height[by_height.size/2]
       lines.delete_if{|l| ((l.bbox.height-2*@image.min_obj_size) > ref_height.bbox.height) or (l.bbox.height<2*@image.min_obj_size)}

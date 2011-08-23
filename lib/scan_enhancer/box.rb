@@ -108,8 +108,10 @@ module ScanEnhancer
     
     def drawContext
       draw = Magick::Draw.new
-      draw.fill = FILL
-      draw.stroke = STROKE
+
+      color = %w(#f00 #0f0 #00f #333 #ddd).sort_by{rand}.first
+      draw.fill = color + '8'
+      draw.stroke = color + 'f'
       draw
     end
 

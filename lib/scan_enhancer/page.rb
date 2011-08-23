@@ -61,6 +61,7 @@ module ScanEnhancer
 
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
+        @components.display_components.display
       }
       ScanEnhancer::profile("get_lines") {
         @lines = @components.get_lines
@@ -107,9 +108,10 @@ module ScanEnhancer
       @angle = angles.first
       p @angle
       #@lines.highlight img
-      if $DISPLAY2
+=begin
+      if $DISPLAY2 or $DEBUG
         @lines.each_with_index do |g,j|
-          #g.display_components(img)
+          g.display_components(img)
           g.highlight img, j.to_s
           g.each_with_index do |c,i|
             if i>0
@@ -122,6 +124,7 @@ module ScanEnhancer
           end
         end
       end
+=end
       if $DISPLAY or $DEBUG
         gc.draw(img)
         img.display

@@ -61,19 +61,22 @@ module ScanEnhancer
 
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
-        @components.display_components.display
       }
       ScanEnhancer::profile("get_lines") {
+        @lines = []
         @lines = @components.get_lines
       }
       if $DISPLAY or $DEBUG
         img = constitute
         gc = Magick::Draw.new
+        #@components.each do |l|
+        #  l.bbox.highlight img
+        #end
       end
       angles = []
       @lines.each_with_index do |line|
-        height = line.bbox.height
-        nc = line.sort_by{|c| c.bottom}[line.size/2]
+        height = line.height
+        nc = line.sort_by{|c| c.height}[(line.size*0.3).to_i]
         nci = line.index(nc)
         search_similar = lambda{|i,inc,max|
           tmp = line[i]
@@ -100,7 +103,7 @@ module ScanEnhancer
           first.highlight img
           last.highlight img
           gc.line(first.middle[0], first.bottom, last.middle[0], last.bottom)
-          line.highlight img, "#{angle}"
+          line.highlight img, "#{angle}", false
         end
       end
       angles.sort_by!{|a| a.abs}
@@ -126,7 +129,7 @@ module ScanEnhancer
       end
 =end
       if $DISPLAY or $DEBUG
-        gc.draw(img)
+        gc.draw(img) unless @lines.empty?
         img.display
       end
 =begin
@@ -178,6 +181,8 @@ module ScanEnhancer
         rotate = %~-rotate "#{@angle}"~
         threshold = %~-threshold #{@attrib[:threshold]}~
       end
+
+      threshold = %~-threshold "#{@attrib[:threshold]}"~
 
       if @image.filename =~ /.pdf$/i
         src = "#{@image.filename}[#{@image.filepage}]"

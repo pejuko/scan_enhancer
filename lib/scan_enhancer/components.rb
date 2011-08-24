@@ -18,7 +18,8 @@ module ScanEnhancer
     def initialize(img,components=nil)
       super()
       @image = img
-      @bbox = nil
+
+      @bbox = Box.new 9999999999, 9999999999, 0, 0 
       if components
         replace(components)
         bounding_box!
@@ -28,33 +29,54 @@ module ScanEnhancer
       end
     end
 
+    def left; @bbox.left end
+    def left=(v); @bbox.left=v end
+    def right; @bbox.right end
+    def right=(v); @bbox.right=v end
+    def top; @bbox.top end
+    def top=(v); @bbox.top=v end
+    def bottom; @bbox.bottom end
+    def bottom=(v); @bbox.bottom=v end
+    def width; @bbox.width end
+    def height; @bbox.height end
+    def middle; @bbox.middle end
+    def join!(b); @bbox.join!(b) end
+    def dist(b); @bbox.dist(b) end
+    def intersect?(b); @bbox.intersect?(b) end
+    def include?(x,y); @bbox.include?(x,y) end
+    def +(b); @bbox + b end
+    alias :join :+
+
     def compute_connected_components
       #peak = @image.rightPeak
       threshold = @image.attrib[:threshold]
-      vmos = [1,(@image.min_obj_size/2)].max
+      vmos = [1,(@image.min_obj_size)/2].max
       hmos = [1,vmos * 0.6].max
-#      vmos = @image.min_obj_size + 1
 #      hmos = vmos
+      #vmos = @image.min_obj_size + 1
       b = @image.borders
       b.height.times do |by|
-        #display_components.display if size>0
+        #display_components.display if size>0 and by%20==0
         c = nil
         lcs = []
-#        p by
+        #p by
+        y = by+b.top
         b.width.times do |bx|
-          x,y = [bx+b.left, by+b.top]
+          #p bx
+          x = bx+b.left
           i = @image.index(x,y)
           next if @image.data[i]>threshold
-          if c==nil or (bx-c.right)>hmos
-            c = Component.new(x,y,x,y)
+          if c==nil or (x-c.right)>hmos
+            c = Components.new @image, [Component.new(x,y,x,y)]
             lcs.push c
           else
-            c.right = bx
+            c.push Component.new(x,y,x,y)
           end
+#          p c
         end
 #        p "components: #{size}"
 #        p "hcomps: #{lcs.size}"
-        ucs = select{|a| (by-a.bottom)<=vmos}
+        ucs = select{|a| (y-a.bottom)<=vmos}
 #        p "ucs: #{ucs.size}"
         lcs.each_with_index do |lc,i|
           uj = []
@@ -62,7 +84,8 @@ module ScanEnhancer
           ucs.each do |uc|
             #p uc
             next if lc.left>(uc.right+hmos) or lc.right<(uc.left-hmos)
-            uj << uc
+            uccs = uc.select{|a| d=a.dist(lc); (d[1]<=vmos) and (d[0]<=hmos)}
+            uj << uc unless uccs.empty?
           end
           if uj.empty?
             push lc
@@ -73,19 +96,25 @@ module ScanEnhancer
 #            lcs.delete(lc)
           end
         end
-=begin
+
+        joined = true
+        while joined
+          joined = false
           ucs.each do |uc|
 #          jucs = ucs.select{|a| a!=uc and uc.right>=a.left}
             jucs = ucs.select{|a| a.intersect?(uc)}
             jucs.delete(uc)
 #            break if jucs.empty?
             jucs.each do |j|
+              jcs = j.select{|a| d=a.dist(uc); (d[1]<=vmos) and (d[0]<=hmos)}
+              next if jcs.empty?
+              joined = true
               uc.join!(j)
               ucs.delete(j)
               delete(j)
             end
           end
-=end
+        end
 #        p "ucs: #{ucs.size}"
 #        p "lcs: #{lcs.size}"
 #        lcs.each{|a| push a}
@@ -153,14 +182,14 @@ module ScanEnhancer
 
     def push(*args)
       c = args.first
-      unless @bbox
-        @bbox = c.dup
-      else
+      #unless @bbox
+      #  @bbox = c.dup
+      #else
         @bbox.left = c.left if c.left < @bbox.left
         @bbox.right = c.right if c.right > @bbox.right
         @bbox.top = c.top if c.top < @bbox.top
         @bbox.bottom = c.bottom if c.bottom > @bbox.bottom
-      end 
+      #end 
       super *args
     end
 
@@ -230,13 +259,12 @@ module ScanEnhancer
 
     def get_lines
       #GC.disable
-      lines = []
       result = []
         all = self.dup
         all.each do |c|
           group = Components.new @image, [c]
           while true
-            jcs = all.select{|a| d = a.dist(group.bbox); d[0]<=10 and (a.middle[1]-group.bbox.middle[1]).abs<=@image.min_obj_size}
+            jcs = all.select{|a| d = a.dist(group); d[0]<=@image.min_content_size and ((group.middle[1]-a.middle[1]).abs<=(@image.min_obj_size*2))}
             break if jcs.empty?
             jcs.each do |jc|
               group.push(jc)
@@ -245,6 +273,7 @@ module ScanEnhancer
           end
           result << group
         end
+      lines = Components.new @image, result
 
 =begin
       result.each do |l|
@@ -312,10 +341,10 @@ module ScanEnhancer
 
 
 
-    def highlight(img=@image.constitute, msg=nil)
+    def highlight(img=@image.constitute, msg=nil, recursive=true)
       each do |c|
         c.highlight img, msg
-      end if first.class == Components
+      end if first.class == Components and recursive
       @bbox.highlight img, msg
     end
 

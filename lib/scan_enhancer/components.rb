@@ -50,8 +50,9 @@ module ScanEnhancer
     def compute_connected_components
       #peak = @image.rightPeak
       threshold = @image.attrib[:threshold]
-      vmos = [1,(@image.min_obj_size)/2].max
-      hmos = [1,vmos * 0.6].max
+      vmos = [1,(@image.min_obj_size)*2].max
+      #hmos = [1,vmos * 0.6].max
+      hmos = 2
 #      hmos = vmos
       #vmos = @image.min_obj_size + 1
       b = @image.borders

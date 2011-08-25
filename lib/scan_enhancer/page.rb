@@ -61,6 +61,7 @@ module ScanEnhancer
 
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
+        #@components.display_components.display
       }
       ScanEnhancer::profile("get_lines") {
         @lines = []
@@ -70,19 +71,38 @@ module ScanEnhancer
         img = constitute
         gc = Magick::Draw.new
         #@components.each do |l|
-        #  l.bbox.highlight img
+        #  l.highlight img, nil, false
         #end
       end
       angles = []
       @lines.each_with_index do |line|
         height = line.height
-        nc = line.sort_by{|c| c.height}[(line.size*0.3).to_i]
-        nci = line.index(nc)
+        sl = line.select{|c| c.height>(height*0.5)}
+        slh = sl.sort_by{|c| c.height}
+        f = f2 = l = 0
+        h = slh.first.height
+        slh.each_with_index do |c,i|
+          next c.height-h < @image.min_obj_size
+          if i-1-f2 > l-f
+            f = f2
+            l = i-1
+          end
+          while f2<slh.size and c.height-slh[f2].height >= @image.min_obj_size
+            f2 += 1
+          end
+          h = slh[f2].height
+        end
+        if slh.size-1-f2 > l-f
+          f = f2
+          l = slh.size-1
+        end
+        nc = slh[(f+l)/2]
+        nci = sl.index(nc)
         search_similar = lambda{|i,inc,max|
-          tmp = line[i]
+          tmp = sl[i]
           while i!=max
-            c = line[i]
-            if ((tmp.bottom-c.bottom).abs <= @min_obj_size/2) and (c.height > height*0.6)
+            c = sl[i]
+            if (tmp.bottom-c.bottom).abs <= @min_obj_size/2
               tmp = c
             end
             i += inc
@@ -90,7 +110,7 @@ module ScanEnhancer
           tmp
         }
         first = search_similar.call(nci,-1,-1)
-        last = search_similar.call(nci,1,line.size)
+        last = search_similar.call(nci,1,sl.size)
         angle = 0.0
         if first!=last
           c = last.middle[0] - first.middle[0]

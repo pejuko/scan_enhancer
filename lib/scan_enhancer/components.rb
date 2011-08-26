@@ -58,7 +58,7 @@ module ScanEnhancer
       #peak = @image.rightPeak
       threshold = @image.attrib[:threshold]
       vmos = [1,(@image.min_obj_size)/2].max
-      hmos = [1,vmos * 0.75].max
+      hmos = [1,vmos * 0.5].max
       #hmos = 2
 #      hmos = vmos
       #vmos = @image.min_obj_size + 1
@@ -277,7 +277,7 @@ module ScanEnhancer
         all.each do |c|
           group = Components.new @image, [c]
           while true
-            jcs = all.select{|a| d = a.dist(group); d[0]<=@image.min_content_size/2 and ((group.middle[1]-a.middle[1]).abs<=(@image.min_obj_size*2))}
+            jcs = all.select{|a| d = a.dist(group); d[0]<group.height and ((group.middle[1]-a.middle[1]).abs<=(@image.min_obj_size*2))}
             break if jcs.empty?
             jcs.each do |jc|
               group.push(jc)

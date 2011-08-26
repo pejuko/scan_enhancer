@@ -75,10 +75,20 @@ module ScanEnhancer
         #end
       end
       angles = []
+
       @lines.each_with_index do |line|
+        cross_baseline = lambda {|j|
+          c, pc, nc = line[j], line[j-1], line[j+1]
+          (pc and (c.bottom-pc.bottom)>=@min_obj_size/2) and
+          (nc and (c.bottom-nc.bottom)>=@min_obj_size/2)
+        }
+
         height = line.height
         #slh = sl.sort_by{|c| c.height}
         slh = line.sort_by{|c| c.height}
+        slh.each_with_index do |c,i|
+          slh.delete_at(i) if cross_baseline.call(i)
+        end
         f = f2 = l = 0
         h = slh.first.height
         slh.each_with_index do |c,i|
@@ -97,13 +107,15 @@ module ScanEnhancer
           l = slh.size-1
         end
         nc = slh[(f+l)/2]
-        sl = line.select{|c| (c.height-nc.height).abs<=@image.min_obj_size}
+        sl = line.select{|c| ((c.height-nc.height).abs<=@image.min_obj_size) and (not cross_baseline.call(line.index(c)))}
         next if sl.empty?
+        i = line.index(nc)
         nci = sl.index(nc)
         search_similar = lambda{|i,inc,max|
           tmp = sl[i]
           while i!=max
             c = sl[i]
+            ci = line.index(c)
             if (tmp.bottom-c.bottom).abs <= @min_obj_size/2
               tmp = c
             end
@@ -111,6 +123,7 @@ module ScanEnhancer
           end
           tmp
         }
+        next unless nci
         first = search_similar.call(nci,-1,-1)
         last = search_similar.call(nci,1,sl.size)
         angle = 0.0

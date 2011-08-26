@@ -61,7 +61,7 @@ module ScanEnhancer
 
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
-        @components.display_components.display
+        @components.display_components.display if $DEBUG or $DISPLAY
       }
       ScanEnhancer::profile("get_lines") {
         @lines = []

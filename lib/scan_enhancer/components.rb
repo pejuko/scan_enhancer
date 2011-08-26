@@ -55,8 +55,10 @@ module ScanEnhancer
     end
 
     def compute_connected_components
-      #peak = @image.rightPeak
-      threshold = @image.attrib[:threshold]
+      peak = @image.rightPeak
+      p peak
+      p @image.attrib[:threshold]
+      threshold = (peak[0]<@image.attrib[:threshold]) ? @image.attrib[:threshold] : peak[0]
       vmos = [1,(@image.min_obj_size)/2].max
       hmos = [1,vmos * 0.5].max
       #hmos = 2
@@ -323,6 +325,7 @@ module ScanEnhancer
         end
       end
 =end
+=begin
       by_height = lines.sort_by{|l| l.bbox.height}
       ref_height = by_height[by_height.size/2]
       lines.delete_if{|l| ((l.bbox.height-2*@image.min_obj_size) > ref_height.bbox.height) or (l.bbox.height<2*@image.min_obj_size)}
@@ -331,6 +334,18 @@ module ScanEnhancer
       lines.delete_if{|l| (l.bbox.width < ref_width.bbox.width)}
       lines.each{|g| g.sort_by!{|c| c.middle[0]}}
       #GC.enable
+=end
+      by_height = lines.sort_by{|l| l.height}.delete_if{|l| l.height<2*@image.min_obj_size}
+      f,l = ScanEnhancer.segment_by by_height, :height, @image.min_obj_size
+      ref_height = by_height[(f+l)/2]
+      lines.delete_if{|l| l.height<2*@image.min_obj_size}
+
+      by_width = lines.sort_by{|l| l.bbox.width}.delete_if{|l| l.width<@image.min_obj_size}
+      f,l = ScanEnhancer.segment_by by_width, :width, @image.min_content_size
+      ref_width = by_width[(f+l)/2]
+      lines.delete_if{|l| ((l.width-ref_width.width).abs<@image.min_content_size)}
+
+      lines.each{|g| g.sort_by!{|c| c.middle[0]}}
       lines
     end
 

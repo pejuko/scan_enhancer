@@ -61,7 +61,7 @@ module ScanEnhancer
 
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
-        #@components.display_components.display
+        @components.display_components.display
       }
       ScanEnhancer::profile("get_lines") {
         @lines = []
@@ -77,8 +77,8 @@ module ScanEnhancer
       angles = []
       @lines.each_with_index do |line|
         height = line.height
-        sl = line.select{|c| c.height>(height*0.5)}
-        slh = sl.sort_by{|c| c.height}
+        #slh = sl.sort_by{|c| c.height}
+        slh = line.sort_by{|c| c.height}
         f = f2 = l = 0
         h = slh.first.height
         slh.each_with_index do |c,i|
@@ -87,7 +87,7 @@ module ScanEnhancer
             f = f2
             l = i-1
           end
-          while f2<slh.size and c.height-slh[f2].height >= @image.min_obj_size
+          while f2<slh.size and c.height-slh[f2].height > @image.min_obj_size
             f2 += 1
           end
           h = slh[f2].height
@@ -97,6 +97,8 @@ module ScanEnhancer
           l = slh.size-1
         end
         nc = slh[(f+l)/2]
+        sl = line.select{|c| (c.height-nc.height).abs<=@image.min_obj_size}
+        next if sl.empty?
         nci = sl.index(nc)
         search_similar = lambda{|i,inc,max|
           tmp = sl[i]

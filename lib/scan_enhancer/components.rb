@@ -40,19 +40,26 @@ module ScanEnhancer
     def width; @bbox.width end
     def height; @bbox.height end
     def middle; @bbox.middle end
-    def join!(b); @bbox.join!(b) end
     def dist(b); @bbox.dist(b) end
     def intersect?(b); @bbox.intersect?(b) end
     def include?(x,y); @bbox.include?(x,y) end
-    def +(b); @bbox + b end
+    def +(b)
+      c = Components.new @image, c
+      c.join!(b)
+    end
     alias :join :+
+    def join!(b)
+      @bbox.join!(b)
+      replace(self | b)
+      self
+    end
 
     def compute_connected_components
       #peak = @image.rightPeak
       threshold = @image.attrib[:threshold]
-      vmos = [1,(@image.min_obj_size)*2].max
-      #hmos = [1,vmos * 0.6].max
-      hmos = 2
+      vmos = [1,(@image.min_obj_size)/2].max
+      hmos = [1,vmos * 0.75].max
+      #hmos = 2
 #      hmos = vmos
       #vmos = @image.min_obj_size + 1
       b = @image.borders
@@ -86,14 +93,19 @@ module ScanEnhancer
             #p uc
             next if lc.left>(uc.right+hmos) or lc.right<(uc.left-hmos)
             uccs = uc.select{|a| d=a.dist(lc); (d[1]<=vmos) and (d[0]<=hmos)}
-            uj << uc unless uccs.empty?
+            uccs.each do |ucc|
+              lccs = lc.select{|a| d=a.dist(ucc); (d[1]<=vmos) and (d[0]<=hmos)}
+              next if lccs.empty?
+              uj << uc
+              break
+            end
           end
           if uj.empty?
             push lc
           else
             u = uj.shift
             u.join!(lc)
-            uj.each{|a| u.join!(a)}
+            uj.each{|a| u.join!(a);}
 #            lcs.delete(lc)
           end
         end
@@ -265,7 +277,7 @@ module ScanEnhancer
         all.each do |c|
           group = Components.new @image, [c]
           while true
-            jcs = all.select{|a| d = a.dist(group); d[0]<=@image.min_content_size and ((group.middle[1]-a.middle[1]).abs<=(@image.min_obj_size*2))}
+            jcs = all.select{|a| d = a.dist(group); d[0]<=@image.min_content_size/2 and ((group.middle[1]-a.middle[1]).abs<=(@image.min_obj_size*2))}
             break if jcs.empty?
             jcs.each do |jc|
               group.push(jc)

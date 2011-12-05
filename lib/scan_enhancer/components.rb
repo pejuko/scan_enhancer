@@ -50,15 +50,19 @@ module ScanEnhancer
     alias :join :+
     def join!(b)
       @bbox.join!(b)
-      replace(self | b)
-      self
+      #p [size, b.size]
+      #replace(self | b)
+      b.each{|x| self[size] = x}
+      #self
     end
 
     def compute_connected_components
-      peak = @image.rightPeak
-      p peak
-      p @image.attrib[:threshold]
-      threshold = (peak[0]<@image.attrib[:threshold]) ? @image.attrib[:threshold] : peak[0]
+      #peak = @image.rightPeak
+      #peak = rightPeak
+      #p peak
+      #p @image.attrib[:threshold]
+      threshold = (@image.attrib[:peak][0]<@image.attrib[:threshold]) ? @image.attrib[:threshold] : (@image.attrib[:peak][0]+@image.attrib[:threshold])/2
+      #threshold = @image.attrib[:threshold]
       vmos = [1,(@image.min_obj_size)/2].max
       hmos = [1,vmos * 0.5].max
       #hmos = 2
@@ -66,7 +70,7 @@ module ScanEnhancer
       #vmos = @image.min_obj_size + 1
       b = @image.borders
       b.height.times do |by|
-        #display_components.display if size>0 and by%20==0
+        #display_components.display if size>0 and by%30==0
         c = nil
         lcs = []
         #p by
@@ -107,11 +111,10 @@ module ScanEnhancer
           else
             u = uj.shift
             u.join!(lc)
-            uj.each{|a| u.join!(a);}
+            uj.each{|a| u.join!(a); delete(a);}
 #            lcs.delete(lc)
           end
         end
-
         joined = true
         while joined
           joined = false
@@ -279,7 +282,10 @@ module ScanEnhancer
         all.each do |c|
           group = Components.new @image, [c]
           while true
-            jcs = all.select{|a| d = a.dist(group); d[0]<group.height and ((group.middle[1]-a.middle[1]).abs<=(@image.min_obj_size*2))}
+#            m = group.sort_by{|a| a.right}.last.middle
+            m = group.middle
+            #p group.height
+            jcs = all.select{|a| d = a.dist(group); d[0]<=group.height and ((m[1]-a.middle[1]).abs<=(@image.min_obj_size*4))}
             break if jcs.empty?
             jcs.each do |jc|
               group.push(jc)

@@ -22,8 +22,9 @@ module ScanEnhancer
       @width = width
       @height = height
       @position = {:left => 0.0, :top => 0.0, :right => 1.0, :bottom => 1.0}
+#      @min_obj_size = [2, ((@height*@width) / (@options[:dpi]**2) + 1)/2].max
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2) + 1].max
-      @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
+      @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / (@options[:working_dpi]**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
       @angle = 0
       info
@@ -33,6 +34,7 @@ module ScanEnhancer
       ScanEnhancer::profile("get histogram and threshold") {
         @attrib[:histogram] = histogram
         @attrib[:threshold] = otsuThreshold
+        @attrib[:peak] = rightPeak
       }
 
       ScanEnhancer::profile("borders detect") {
@@ -79,8 +81,8 @@ module ScanEnhancer
       @lines.each_with_index do |line|
         cross_baseline = lambda {|j|
           c, pc, nc = line[j], line[j-1], line[j+1]
-          (pc and (c.bottom-pc.bottom)>=@min_obj_size/2) and
-          (nc and (c.bottom-nc.bottom)>=@min_obj_size/2)
+          (pc and (c.bottom-pc.bottom)>@min_obj_size/2) or
+          (nc and (c.bottom-nc.bottom)>@min_obj_size/2)
         }
 
         height = line.height
@@ -131,7 +133,7 @@ module ScanEnhancer
           c = last.middle[0] - first.middle[0]
           b = first.bottom - last.bottom
           angle = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
-          angles << angle
+          angles <<  [angle,c]
         end
         if $DISPLAY or $DEBUG
           nc.highlight img
@@ -141,9 +143,11 @@ module ScanEnhancer
           line.highlight img, "#{angle}", false
         end
       end
-      angles.sort_by!{|a| a.abs}
+#      p angles
+#      angles = ScanEnhancer.segment_by(angles, :last, @min_obj_size)
+      angles.sort_by!{|a| a[0].abs}
       p angles
-      @angle = angles.first
+      @angle = angles.first[0]
       p @angle
       #@lines.highlight img
 =begin

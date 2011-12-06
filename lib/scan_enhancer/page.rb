@@ -26,7 +26,7 @@ module ScanEnhancer
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2) + 1].max
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / (@options[:working_dpi]**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
-      @angle = 0
+      @angle = @image.angle
       info
     end
 
@@ -128,26 +128,26 @@ module ScanEnhancer
         next unless nci
         first = search_similar.call(nci,-1,-1)
         last = search_similar.call(nci,1,sl.size)
-        angle = 0.0
+        ang = 0.0
         if first!=last
           c = last.middle[0] - first.middle[0]
           b = first.bottom - last.bottom
-          angle = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
-          angles <<  [angle,c]
+          ang = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
+          angles <<  [ang,c]
         end
         if $DISPLAY or $DEBUG
           nc.highlight img
           first.highlight img
           last.highlight img
           gc.line(first.middle[0], first.bottom, last.middle[0], last.bottom)
-          line.highlight img, "#{angle}", false
+          line.highlight img, "#{ang}", false
         end
       end
 #      p angles
 #      angles = ScanEnhancer.segment_by(angles, :last, @min_obj_size)
       angles.sort_by!{|a| a[0].abs}
       p angles
-      @angle = angles.first[0]
+      @angle += angles.first[0] if angles.size > 0
       p @angle
       #@lines.highlight img
 =begin
@@ -228,7 +228,7 @@ module ScanEnhancer
       else
         src = @image.filename
       end
-      cmd = %~gm convert #{src} #{chop} #{crop} #{rotate} #{threshold} #{file_name}~
+      cmd = %~gm convert #{src} #{rotate} #{chop} #{crop} #{threshold} #{file_name}~
 #      cmd = %~gm convert "#{@image.filename}[#{@image.filepage}]" -crop "#{c[2]-c[0]}x#{c[3]-c[1]}+#{c[0]}+#{c[1]}" -rotate #{@angle} -threshold #{@attrib[:threshold]} #{file_name}~
       puts cmd
       system(cmd)

@@ -21,7 +21,8 @@ module ScanEnhancer
     # delete too small content and border content
     def delete_small!
       @contents.delete_if do |c|
-        ((c[1] - c[0]) < @image.min_content_size*0.6) or
+#        ((c[1] - c[0]) < @image.min_content_size*0.6) or
+        ((c[1] - c[0]) < @image.min_obj_size) or
         ((c[0] - @image.min_obj_size <= 0) and (c[2]<@image.min_content_size)) or
         ((c[1] + @image.min_obj_size >= @projection.size) and (c[2]<@image.min_content_size))
       end
@@ -133,6 +134,7 @@ module ScanEnhancer
         (h-mh).times do |b|
           x,y = @type==:vertical ? [a,b] : [b,a]
           idx = @image.index(x, y)
+          #p [idx, w, h, mh, a, b, x, y, @image.width, @image.height]
           if @data[idx] <= @threshold
             obj_height += 1
             obj_height += gap if gap <= @image.min_obj_size

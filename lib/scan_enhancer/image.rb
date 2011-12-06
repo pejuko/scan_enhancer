@@ -11,7 +11,7 @@ module ScanEnhancer
   # Detects pages in an image.
   class Image
     
-    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage, :depth, :image_width, :image_height
+    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage, :depth, :image_width, :image_height, :angle
 
     def initialize img, opts={}, page=0
       @options = opts
@@ -25,6 +25,7 @@ module ScanEnhancer
       @dpi = opts[:dpi] if opts[:force_dpi] or @dpi<100
       @data = img
       downscale!
+      @angle = 0.0
       @width = @data.columns
       @height = @data.rows
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2)].max
@@ -84,6 +85,8 @@ module ScanEnhancer
       @attrib[:histogram] = histogram
       p(@attrib[:threshold] = otsuThreshold)
       p rightPeak
+
+      fixPageOrientation!
       @pages = findPages
 
       @pages.each do |page|
@@ -93,10 +96,42 @@ module ScanEnhancer
       @pages
     end
 
-    # find page contents in image and create Page objects
-    # (expects that @data is array of bytes, and the image is well orientated)
+    # detect and fix page orientation (if wrong orientation, top at left is assumed)
+    def fixPageOrientation!
+      vp = Projection.new(self, Projection::VERTICAL)
+      vp.highlight.display if $DISPLAY
+      hp = Projection.new(self, Projection::HORIZONTAL)
+      hp.highlight.display if $DISPLAY
+      if vp.to_boxes.size > hp.to_boxes.size
+        @angle = 90
+
+        new_data = Array.new(@data.size){255}
+        @height.times do |y|
+          @width.times do |x|
+            new_idx = x*@height + @height-y-1
+            new_data[new_idx] = @data[index(x,y)]
+          end
+        end
+        @data = new_data
+
+        tmp = @height
+        @height = @width
+        @width = tmp
+
+        tmp = @image_height
+        @image_height = @image_width
+        @image_width = tmp
+
+        @borders.right = @width - 1
+        @borders.bottom = @height - 1
+      end
+    end
+
+    # finds page contents in image and create Page objects
+    # (expects that @data is array of bytes)
     def findPages
       pages = []
+
       if (@width < @height)
         # only one page layout
         pages << Page.new(self, @data, @width, @height, @options)

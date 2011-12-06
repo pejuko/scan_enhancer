@@ -88,12 +88,20 @@ module ScanEnhancer
       boxes
     end
 
-    def fill(img, color = 255)
-      draw = Magick::Draw.new
-      draw.fill = "#ffff"
-      draw.stroke = "#ffff"
-      draw.rectangle(@left, @top, @right, @bottom)
-      draw.draw(img)
+    def fill(img, color = 255, max_x, max_y)
+      if img.kind_of? Array
+        (@left..@right).each do |x|
+          (@top..@bottom).each do |y|
+            img[y*max_x + x] = color
+          end
+        end
+      else
+        draw = Magick::Draw.new
+        draw.fill = "#ffff"
+        draw.stroke = "#ffff"
+        draw.rectangle(@left, @top, @right, @bottom)
+        draw.draw(img)
+      end
     end
 
     def to_a
@@ -101,7 +109,7 @@ module ScanEnhancer
     end
 
     def to_f(iw,ih,w=1.0,h=1.0)
-      [(@left.to_f/iw)*w, (@top.to_f/ih)*h, (@right.to_f/iw)*w, (@bottom.to_f/ih)*h]
+      [[0,((@left-1).to_f/iw)*w].max, [0,((@top-1).to_f/ih)*h].max, [w,((@right+1).to_f/iw)*w].min, [h,((@bottom+1).to_f/ih)*h].min]
     end
 
   private

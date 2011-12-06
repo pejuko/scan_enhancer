@@ -12,6 +12,8 @@ module ScanEnhancer
     VERTICAL = :vertical
     HORIZONTAL = :horizontal
 
+    attr_reader :projection, :contents
+
     def initialize(image, type)
       @image, @data, @threshold, @type = [image, image.data, image.attrib[:threshold], type]
       @projection = computeProjection

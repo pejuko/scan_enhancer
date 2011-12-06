@@ -33,6 +33,7 @@ module ScanEnhancer
       @borders = Box.new(0, 0, @width-1, @height-1)
       desaturate!
       to_data!
+
       @pages = []
     end
 
@@ -86,6 +87,10 @@ module ScanEnhancer
       p(@attrib[:threshold] = otsuThreshold)
       p rightPeak
 
+      @borders = Borders.new(self)
+      @borders.fineTuneBorders!
+      @borders.highlight(constitute, "Borders").display if $DISPLAY
+
       fixPageOrientation!
       @pages = findPages
 
@@ -122,8 +127,9 @@ module ScanEnhancer
         @image_height = @image_width
         @image_width = tmp
 
-        @borders.right = @width - 1
-        @borders.bottom = @height - 1
+        @borders = Borders.new(self)
+        @borders.fineTuneBorders!
+        @borders.highlight(constitute, "Borders").display if $DISPLAY
       end
     end
 
@@ -181,6 +187,8 @@ module ScanEnhancer
     def to_data!
       #@data = @data.dispatch(0,0,@data.columns,@data.rows,"I",true)
       #GC.disable
+      @width = @data.columns
+      @height = @data.rows
       @data = @data.export_pixels(0,0,@data.columns,@data.rows,"I")
       coef = 255.to_f / Magick::QuantumRange.to_f
       ScanEnhancer::profile("desaturate: convert to 0-255 range") {
@@ -189,7 +197,7 @@ module ScanEnhancer
       #GC.enable
     end
 
-    # cut rectangel from @data
+    # cut rectangle from @data
     def cut(x1, y1, x2, y2)
       w, h = [x2-x1, y2-y1]
       new_data = Array.new(w*h){255}

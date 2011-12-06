@@ -33,6 +33,12 @@ module ScanEnhancer
       fineTuneBorderCorner!(:right, :bottom, -1, -1)
     end
 
+    def fill_invert
+      invert(@image.width, @image.height).each do |box|
+        box.fill(@image.data, 255, @image.width, @image.height)
+      end
+    end
+
     # map values to <0..1> and return as an array
     def to_f(w=1.0, h=1.0)
       super(@image.width, @image.height, w, h)

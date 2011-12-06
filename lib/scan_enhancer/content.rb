@@ -60,7 +60,7 @@ module ScanEnhancer
 
     def fill_invert
       invert(@image.width, @image.height).each do |box|
-        box.fill(@image.data)
+        box.fill(@image.data, 255, @image.width, @image.height)
       end
     end
 
@@ -96,7 +96,7 @@ module ScanEnhancer
     def fineTuneEdge(start_x, start_y, inc_x, inc_y, edge, inc_edge, min, max)
       x, y = self.send(start_x), self.send(start_y)
       while (x <= @right) and (y <= @bottom) and (self.send(edge) > min) and (self.send(edge) < max)
-        top_x, top_y = (x != 0) ? [x, y+inc_edge] : [x+inc_edge, y]
+        top_x, top_y = (inc_x != 0) ? [x, y+inc_edge] : [x+inc_edge, y]
         idx_top = @image.index(top_x, top_y)
         if @image.data[idx_top] and (@image.data[idx_top] <= @image.attrib[:threshold])
           eval %~@#{edge} += inc_edge~

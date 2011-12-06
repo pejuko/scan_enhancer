@@ -41,7 +41,8 @@ GetoptLong.new(
   ["--verbose", "-v", GetoptLong::NO_ARGUMENT],
   ["--display", "-D", GetoptLong::NO_ARGUMENT],
   ["--force_dpi", "-f", GetoptLong::NO_ARGUMENT],
-  ["--dpi", "-d", GetoptLong::REQUIRED_ARGUMENT]
+  ["--dpi", "-d", GetoptLong::REQUIRED_ARGUMENT],
+  ["--working_dpi", "-w", GetoptLong::REQUIRED_ARGUMENT]
 ).each do |opt, val|
 
   key = opt[2..-1].to_sym
@@ -54,7 +55,7 @@ GetoptLong.new(
   when :force_dpi
     opts[key] = true
   when :test
-  when :dpi
+  when :dpi, :working_dpi
     opts[key] = val.to_i
   else
     opts[key] = val

@@ -43,24 +43,6 @@ module ScanEnhancer
       }
       @borders.highlight(constitute, "Borders").display if $DISPLAY
 
-      ScanEnhancer::profile("vertical projection") {
-        @vertical_projection = Projection.new(self, Projection::VERTICAL)
-        @vertical_projection.join_adjacent!
-        @vertical_projection.delete_small!
-      }
-
-      ScanEnhancer::profile("horizontal projection") {
-        @horizontal_projection = Projection.new(self, Projection::HORIZONTAL)
-        @horizontal_projection.join_adjacent!
-        @horizontal_projection.delete_small!
-      }
-
-      ScanEnhancer::profile("content detection") {
-        @content = Content.new(self)
-        @content.fineTuneContentBox!
-      }
-      @content.highlight.display if $DISPLAY
-
       ScanEnhancer::profile("conected components") {
         @components = Components.new(self)
         @components.display_components.display if $DEBUG or $DISPLAY
@@ -181,6 +163,47 @@ module ScanEnhancer
       @speckles.display_components.display
       (@lines - @speckles).display_components.display
 =end
+
+      @data = constitute
+      deskew!
+      to_data!
+      ScanEnhancer::profile("borders detect") {
+        @borders = Borders.new(self)
+        @borders.fineTuneBorders!
+      }
+      @borders.highlight(constitute, "Borders").display if $DISPLAY
+
+
+      ScanEnhancer::profile("vertical projection") {
+        @vertical_projection = Projection.new(self, Projection::VERTICAL)
+        @vertical_projection.join_adjacent!
+        @vertical_projection.delete_small!
+      }
+
+      tmp = @data.dup
+      @borders.fill_invert
+      histogram!
+      @attrib[:threshold] = otsuThreshold
+      @data = tmp
+
+      ScanEnhancer::profile("horizontal projection") {
+        @horizontal_projection = Projection.new(self, Projection::HORIZONTAL)
+        @horizontal_projection.join_adjacent!
+        @horizontal_projection.delete_small!
+      }
+
+      ScanEnhancer::profile("content detection") {
+        @content = Content.new(self)
+        @content.fineTuneContentBox!
+      }
+      @content.highlight.display if $DISPLAY
+
+
+      tmp = @data.dup
+      @content.fill_invert
+      histogram!
+      @attrib[:threshold] = otsuThreshold
+      @data = tmp
     end
 
     def load_original
@@ -204,16 +227,18 @@ module ScanEnhancer
       #if @position[:right] < 1
       #  c[2] -= @image.image_width * (1-@position[:right])
       #end
+      
+      w = b[2]-b[0]
+      h = b[3]-b[1]
 
       chop = "-fill white"
+      crop = %~-crop~
       chop += %~ -draw "rectangle 0,0 #{iw},#{c[1]-1}"~
       chop += %~ -draw "rectangle 0,0 #{c[0]-1},#{@image.image_height}"~
       chop += %~ -draw "rectangle 0,#{c[3]+1} #{@image.image_width},#{@image.image_height}"~
       chop += %~ -draw "rectangle #{c[2]+1},0 #{@image.image_width},#{@image.image_height}"~
 
-      w = b[2]-b[0]
-      h = b[3]-b[1]
-      crop = %~-crop "#{w}x#{h}+#{b[0]}+#{b[1]}"~
+      crop += %~ "#{w}x#{h}+#{b[0]}+#{b[1]}"~
 
       rotate = ""
       if @angle

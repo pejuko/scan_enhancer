@@ -110,6 +110,7 @@ module ScanEnhancer
 
     def to_f(iw,ih,w=1.0,h=1.0)
       [[0,((@left-1).to_f/iw)*w].max, [0,((@top-1).to_f/ih)*h].max, [w,((@right+1).to_f/iw)*w].min, [h,((@bottom+1).to_f/ih)*h].min]
+#      [[0,(@left.to_f/iw)*w].max, [0,(@top.to_f/ih)*h].max, [w,(@right.to_f/iw)*w].min, [h,(@bottom.to_f/ih)*h].min]
     end
 
   private

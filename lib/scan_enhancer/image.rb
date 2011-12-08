@@ -11,7 +11,7 @@ module ScanEnhancer
   # Detects pages in an image.
   class Image
     
-    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage, :depth, :image_width, :image_height, :angle
+    attr_reader :data, :pages, :attrib, :width, :height, :borders, :min_obj_size, :min_content_size, :vertical_projection, :horizontal_projection, :filename, :filepage, :depth, :image_width, :image_height, :angle, :orient
 
     def initialize img, opts={}, page=0
       @options = opts
@@ -31,6 +31,7 @@ module ScanEnhancer
       @min_obj_size = [2, (@height*@width) / ((@options[:working_dpi]*4)**2)].max
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / ((@options[:working_dpi])**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
+      @orient = 0.0
       desaturate!
       to_data!
 
@@ -108,7 +109,7 @@ module ScanEnhancer
       hp = Projection.new(self, Projection::HORIZONTAL)
       hp.highlight.display if $DISPLAY
       if vp.to_boxes.size > hp.to_boxes.size
-        @angle = 90
+        @orient = 90
 
         new_data = Array.new(@data.size){255}
         @height.times do |y|
@@ -175,7 +176,27 @@ module ScanEnhancer
     def deskew!
       #@data = @data.deskew(@attrib[:threshold].to_f/255)
       GC.disable
-      @data = @data.rotate(-1*@angle)
+      p ["image size", @image_width, @image_height]
+=begin
+      a = (@angle * Math::PI) / 180.0
+      sina = Math.sin(a)
+      cosa = Math.cos(a)
+      rtx = @image_width * cosa
+      rty = @image_width * sina
+      rbx = @image_width * cosa - @image_height * sina
+      rby = @image_width * sina + @image_height * cosa
+      lbx =  -1 * @image_height * sina
+      lby = @image_height * cosa
+      @image_width = [rtx-lbx, rbx].max
+      @image_height = [rby, lby-rty].max
+=end
+      oldc = @data.columns
+      oldr = @data.rows
+      @data.background_color = "#000000"
+      @data = @data.rotate(@angle)
+      @image_width *= @data.columns / oldc.to_f
+      @image_height *= @data.rows / oldr.to_f
+      p ["image size", @image_width, @image_height]
       GC.enable
     end
 

@@ -25,7 +25,7 @@ module ScanEnhancer
       @pages.each_with_index do |page, i|
         puts "Export:"
 =begin
-        page.load_original
+        #page.load_original
         ScanEnhancer::profile("fill_invert") {
           page.content.fill_invert
         }
@@ -38,6 +38,7 @@ module ScanEnhancer
 =end
         ScanEnhancer::profile("export") {
           page.export("page-%04d.tif" % [@page_number_start + @page_number_step*i])
+          #page.export_data("page-%04d.tif" % [@page_number_start + @page_number_step*i])
         }
         page.free_data!
         puts ""
@@ -45,27 +46,39 @@ module ScanEnhancer
     end
 
     # Load and analyse input files
-    def load_files files=[]
+    def process_files files=[]
       files.each do |file|
-        load_file file
+        process_file file
       end
     end
 
     private
 
     # Load, analyse and append an input file
-    def load_file file
+    def process_file file
       ifile = ImageFile.new file, @options
       throw "'#{file}' does not contain any image" unless ifile.loaded?
       puts "#{ifile.size} images loaded from #{ifile.file_name}" if @options[:verbose]
       @files << ifile
+#      new_pages = []
       ifile.images.each do |image|
         image.info
         @images << image
+#        new_pages = image.analyse
         @pages += image.analyse
         image.free_data!
         image.pages.each{|page| page.free_data!}
       end
+=begin
+      new_pages.each_with_index do |page, i|
+        page.content.fill_invert
+        page.threshold!
+        page.export_data("page-%04d.tif" % [@page_number_start + @pages.size*@page_number_step + @page_number_step*i])
+        page.free_data!
+      end
+      @images.each {|img| img.free_data!}
+      @pages += new_pages
+=end
     end
 
   end

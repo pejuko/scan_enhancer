@@ -27,6 +27,7 @@ module ScanEnhancer
       @min_content_size = (@min_obj_size * Math.sqrt((@height*@width) / (@options[:working_dpi]**2))).to_i
       @borders = Box.new(0, 0, @width-1, @height-1)
       @angle = @image.angle
+      @image_width, @image_height = [@image.image_width, @image.image_height]
       info
     end
 
@@ -212,10 +213,13 @@ module ScanEnhancer
     end
 
     def export(file_name)
-      iw = @image.image_width * (@position[:right] - @position[:left])
-      ih = @image.image_height * (@position[:bottom] - @position[:top])
-      c = @content.to_f(iw, ih).map{|x| x.to_i}
-      b = @borders.to_f(iw, ih).map{|x| x.to_i}
+      iw = @image_width * (@position[:right] - @position[:left])
+      ih = @image_height * (@position[:bottom] - @position[:top])
+
+      #p @content.to_a, @borders.to_a
+      c = @content.to_f(iw, ih)
+      b = @borders.to_f(iw, ih)
+      #p c, b
 
       if @position[:left] > 0
         s = @image.image_width * @position[:left]
@@ -228,22 +232,23 @@ module ScanEnhancer
       #  c[2] -= @image.image_width * (1-@position[:right])
       #end
       
+      [c,b].each {|a| a.map!{|x| x.to_i}}
+
       w = b[2]-b[0]
       h = b[3]-b[1]
 
       chop = "-fill white"
-      crop = %~-crop~
       chop += %~ -draw "rectangle 0,0 #{iw},#{c[1]-1}"~
       chop += %~ -draw "rectangle 0,0 #{c[0]-1},#{@image.image_height}"~
       chop += %~ -draw "rectangle 0,#{c[3]+1} #{@image.image_width},#{@image.image_height}"~
       chop += %~ -draw "rectangle #{c[2]+1},0 #{@image.image_width},#{@image.image_height}"~
 
+      crop = %~-crop~
       crop += %~ "#{w}x#{h}+#{b[0]}+#{b[1]}"~
 
       rotate = ""
-      if @angle
-        rotate = %~-rotate "#{@angle}"~
-        threshold = %~-threshold #{@attrib[:threshold]}~
+      if @angle or @image.orient
+        rotate = %~-rotate "#{@angle + @image.orient}"~
       end
 
       threshold = %~-threshold "#{@attrib[:threshold]}"~
@@ -253,12 +258,18 @@ module ScanEnhancer
       else
         src = @image.filename
       end
-      cmd = %~gm convert #{src} #{rotate} #{chop} #{crop} #{threshold} #{file_name}~
+
+      rect = "-fill none -stroke black"
+      rect += " -draw 'rectangle #{c[0]},#{c[1]} #{c[2]},#{c[3]}'"
+
+      cmd = %~gm convert #{src} #{rotate} #{chop} #{threshold} #{rect} #{crop} #{file_name}~
 #      cmd = %~gm convert "#{@image.filename}[#{@image.filepage}]" -crop "#{c[2]-c[0]}x#{c[3]-c[1]}+#{c[0]}+#{c[1]}" -rotate #{@angle} -threshold #{@attrib[:threshold]} #{file_name}~
       puts cmd
       system(cmd)
 
-=begin
+    end
+
+    def export_data file_name
       GC.disable
       img = @data
       img = constitute if @data.is_a? Array
@@ -271,7 +282,7 @@ module ScanEnhancer
         end
       }
       GC.enable
-=end
     end
+
   end
 end

@@ -72,7 +72,8 @@ module ScanEnhancer
         #slh = sl.sort_by{|c| c.height}
         slh = line.sort_by{|c| c.height}
         slh.each_with_index do |c,i|
-          slh.delete_at(i) if cross_baseline.call(i)
+          #slh.delete_at(i) if cross_baseline.call(i)
+          slh.delete_at(i) if cross_baseline.call(line.index(c))
         end
         f = f2 = l = 0
         h = slh.first.height

@@ -285,7 +285,7 @@ module ScanEnhancer
 #            m = group.sort_by{|a| a.right}.last.middle
             m = group.middle
             #p group.height
-            jcs = all.select{|a| d = a.dist(group); d[0]<=group.height and ((m[1]-a.middle[1]).abs<=(@image.min_obj_size*4))}
+            jcs = all.select{|a| d = a.dist(group); d[0]<=group.max_height and ((m[1]-a.middle[1]).abs<=(@image.min_obj_size*4))}
             break if jcs.empty?
             jcs.each do |jc|
               group.push(jc)
@@ -368,6 +368,11 @@ module ScanEnhancer
       @bbox = Box.new left, top, right, bottom
     end
 
+
+    def max_height
+      return 0 if empty?
+      map{|e| e.bbox.height}.max
+    end
 
 
     def highlight(img=@image.constitute, msg=nil, recursive=true)

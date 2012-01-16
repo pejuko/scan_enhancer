@@ -78,12 +78,12 @@ module ScanEnhancer
         f = f2 = l = 0
         h = slh.first.height
         slh.each_with_index do |c,i|
-          next c.height-h < @image.min_obj_size
+          next (c.height-h).abs < @image.min_obj_size
           if i-1-f2 > l-f
             f = f2
             l = i-1
           end
-          while f2<slh.size and c.height-slh[f2].height > @image.min_obj_size
+          while f2<slh.size and (c.height-slh[f2].height).abs > @image.min_obj_size
             f2 += 1
           end
           h = slh[f2].height
@@ -116,8 +116,12 @@ module ScanEnhancer
         if first!=last
           c = last.middle[0] - first.middle[0]
           b = first.bottom - last.bottom
+          next if (c.abs < 0.85*line.width)
+          #p [c, line.width]
           ang = Math.atan(b.to_f / c.to_f) * (180.0/Math::PI)
           angles <<  [ang,c]
+        else
+          next
         end
         if $DISPLAY or $DEBUG
           nc.highlight img

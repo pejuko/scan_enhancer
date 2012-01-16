@@ -278,14 +278,16 @@ module ScanEnhancer
     def get_lines
       #GC.disable
       result = []
-        all = self.dup
+        all = self.dup.sort_by{|c| c.right}
         all.each do |c|
           group = Components.new @image, [c]
           while true
 #            m = group.sort_by{|a| a.right}.last.middle
             m = group.middle
             #p group.height
-            jcs = all.select{|a| d = a.dist(group); d[0]<=group.max_height and ((m[1]-a.middle[1]).abs<=(@image.min_obj_size*4))}
+            rm = group.right_most
+            mw = group.max_width
+            jcs = all.select{|a| d = a.dist(rm); (d[0] < 1.6*mw) and (d[1] < @image.min_obj_size)}
             break if jcs.empty?
             jcs.each do |jc|
               group.push(jc)
@@ -334,19 +336,23 @@ module ScanEnhancer
       lines.delete_if{|l| l.height<2*@image.min_obj_size}
       lines.delete_if{|l| l.width<@image.min_content_size}
 
+        lines.highlight.display
       if lines.size > 0
         by_height = lines.sort_by{|l| l.height}
         f,l = ScanEnhancer.segment_by by_height, :height, @image.min_obj_size
         ref_height = by_height[(f+l)/2]
-        lines.delete_if{|l| (l.height-ref_height.height).abs>2*@image.min_obj_size}
+        lines.delete_if{|l| (l.height-ref_height.height).abs>@image.min_obj_size}
 
         by_width = lines.sort_by{|l| l.bbox.width}
         f,l = ScanEnhancer.segment_by by_width, :width, @image.min_content_size
-        ref_width = by_width[(f+l)/2]
-        lines.delete_if{|l| (l.width-ref_width.width).abs>@image.min_content_size}
+#        ref_width = by_width[(f+l)/2]
+        ref_width = by_width[l]
+        lines.delete_if{|l| (l.width-ref_width.width).abs>2*@image.min_content_size}
       end
+        lines.highlight.display
 
       lines.each{|g| g.sort_by!{|c| c.middle[0]}}
+
       lines
     end
 
@@ -369,11 +375,22 @@ module ScanEnhancer
     end
 
 
+    def right_most
+      rm = first
+      each {|a| rm = a if a.right > rm.right}
+      rm
+    end
+
     def max_height
       return 0 if empty?
       map{|e| e.bbox.height}.max
     end
 
+
+    def max_width
+      return 0 if empty?
+      map{|e| e.bbox.width}.max
+    end
 
     def highlight(img=@image.constitute, msg=nil, recursive=true)
       each do |c|

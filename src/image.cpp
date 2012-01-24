@@ -13,22 +13,21 @@ Image::Image(PIX *pix, ImageFile *ifile)
 
 void Image::gen_preview(void)
 {
-	if (p_preview) delete p_preview;
+	if (p_preview) pixDestroy(&p_preview);
 
 	p_preview = pixScaleToSize(p_pix, 800, 0);
 }
 
 void Image::gen_thumbnail(void)
 {
-	if (p_thumbnail) delete p_thumbnail;
+	if (p_thumbnail) pixDestroy(&p_thumbnail);
 
 	p_thumbnail = pixScaleToSize(p_preview, 160, 0);
 }
 
 void Image::free_pix(void)
 {
-	if (p_pix) delete p_pix;
-	p_pix = 0;
+	if (p_pix) pixDestroy(&p_pix);
 }
 
 void Image::clear_pages(void)
@@ -79,9 +78,9 @@ void Image::find_pages(void)
 
 Image::~Image(void)
 {
-	if (p_pix) delete p_pix;
-	if (p_preview) delete p_preview;
-	if (p_thumbnail) delete p_thumbnail;
+	if (p_pix) pixDestroy(&p_pix);
+	if (p_preview) pixDestroy(&p_preview);
+	if (p_thumbnail) pixDestroy(&p_thumbnail);
 	clear_pages();
 	delete p_pages;
 }

@@ -16,14 +16,12 @@ Page::Page(Image *img, double left, double top, double right, double bottom)
 
 void Page::free_pix(void)
 {
-	if (p_pix) delete p_pix;
-	p_pix = 0;
+	if (p_pix) pixDestroy(&p_pix);
 }
 
 void Page::free_result(void)
 {
-	if (p_result) delete p_result;
-	p_result = 0;
+	if (p_result) pixDestroy(&p_result);
 }
 
 void Page::analyse(void)

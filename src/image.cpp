@@ -42,11 +42,13 @@ void Image::clear_pages(void)
 	p_pages->clear();
 }
 
-void Image::analyse(void)
+void Image::analyse(FilterQueue *queue)
 {
 	find_pages();
 	for (int i=0; i<p_pages->size(); i++) {
-		p_pages->at(i)->analyse();
+		queue->init_params(p_pages->at(i));
+		queue->process(p_pages->at(i));
+		//p_pages->at(i)->analyse();
 	}
 }
 

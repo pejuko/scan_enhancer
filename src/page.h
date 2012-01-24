@@ -2,6 +2,7 @@
 #define _SCAN_PAGE_
 
 #include "image.h"
+#include "filter.h"
 
 #include <vector>
 #include <string>
@@ -13,6 +14,9 @@ extern "C" {
 namespace ScanEnhancer {
 
 class Image;
+class Filter;
+class FilterParams;
+class FilterQueue;
 
 class Page {
 public:
@@ -21,8 +25,13 @@ public:
 
 	void free_pix(void);
 	void free_result(void);
+	void clear_params(void);
+
 	void analyse(void);
 	void export_result(std::string fname);
+
+	PIX *getResult(void) { return p_result; };
+	void setResult(PIX *pix) { free_result(); p_result = pix; };
 
 	int width(void) const { return m_width; };
 	int height(void) const { return m_height; };
@@ -33,6 +42,9 @@ private:
 	PIX   *p_pix, *p_result;
 	double m_width, m_height;
 	double m_angle;
+	std::vector<FilterParams*> params;
+
+	friend class FilterQueue;
 };
 
 typedef std::vector<Page*> Pages;

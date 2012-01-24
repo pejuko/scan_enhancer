@@ -3,6 +3,7 @@
 
 #include "file.h"
 #include "page.h"
+#include "filter.h"
 
 #include <vector>
 #include <string>
@@ -15,6 +16,7 @@ namespace ScanEnhancer {
 
 class ImageFile;
 class Page;
+class FilterQueue;
 
 class Image {
 public:
@@ -25,7 +27,7 @@ public:
 	void gen_thumbnail(void);
 	void free_pix(void);
 	void clear_pages(void);
-	void analyse(void);
+	void analyse(FilterQueue *queue);
 	void export_result(std::string prefix);
 
 	PIX *cut(double left, double top, double right, double bottom);

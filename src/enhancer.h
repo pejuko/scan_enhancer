@@ -16,6 +16,7 @@ public:
 private:
 	ImageFiles *p_files;
 	Images     *p_images;
+	FilterQueue m_filterQueue;
 };
 
 };

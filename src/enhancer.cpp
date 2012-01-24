@@ -1,4 +1,8 @@
 #include "file.h"
+
+#include "filter.h"
+#include "filters/deskew.h"
+
 #include "enhancer.h"
 
 #include <iostream>
@@ -11,6 +15,7 @@ Enhancer::Enhancer(ImageFiles *files)
 	: p_files(files)
 {
 	p_images = new Images();
+	m_filterQueue.push_back(new FilterDeskew());
 }
 
 Enhancer::~Enhancer(void)
@@ -27,7 +32,7 @@ void Enhancer::analyze(void)
 			Image *img = images->at(idx);
 			//img->gen_preview();
 			//img->gen_thumbnail();
-			img->analyse();
+			img->analyse(&m_filterQueue);
 			//img->free_pix();
 			p_images->push_back(img);
 		}

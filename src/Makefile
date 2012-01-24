@@ -1,6 +1,6 @@
 ENHANCER_FLAGS=-g
-ENHANCER_SRC=main.cpp file.cpp image.cpp enhancer.cpp
-ENHANCER_HEADERS=file.h image.h enhancer.h
+ENHANCER_SRC=main.cpp file.cpp image.cpp enhancer.cpp page.cpp
+ENHANCER_HEADERS=file.h image.h enhancer.h page.h
 ENHANCER_LIBS=-llept
 
 all: ${ENHANDER_SRC} ${ENHANCER_HEADERS}

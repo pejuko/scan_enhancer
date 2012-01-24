@@ -14,6 +14,7 @@ int main(int argc, char **argv)
 
 	ScanEnhancer::Enhancer enhancer(&files);
 	enhancer.analyze();
+	enhancer.export_result();
 
 	for (int i=0; i<files.size(); i++) {
 		delete files[i];

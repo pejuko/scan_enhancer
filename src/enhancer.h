@@ -11,6 +11,7 @@ public:
 	~Enhancer(void);
 
 	void analyze(void);
+	void export_result(void);
 
 private:
 	ImageFiles *p_files;

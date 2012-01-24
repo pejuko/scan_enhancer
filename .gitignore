@@ -2,3 +2,4 @@
 *.swp
 tags
 .vimprj/project_tags
+*tif

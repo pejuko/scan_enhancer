@@ -7,7 +7,7 @@
 namespace ScanEnhancer {
 
 Page::Page(Image *img, double left, double top, double right, double bottom)
-	: p_image(img), m_left(left), m_top(top), m_right(right), m_bottom(bottom), p_result(0)
+	: p_image(img), m_left(left), m_top(top), m_right(right), m_bottom(bottom), p_result(0), m_content()
 {
 	p_pix = p_image->cut(left, top, right, bottom);
 	m_width = p_pix->w;

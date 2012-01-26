@@ -3,6 +3,7 @@
 
 #include "image.h"
 #include "filter.h"
+#include "rect.h"
 
 #include <vector>
 #include <string>
@@ -33,6 +34,10 @@ public:
 	PIX *getResult(void) { return p_result; };
 	void setResult(PIX *pix) { free_result(); p_result = pix; };
 
+	Rect *getContentBox(void) { return &m_content; };
+	void setContentBox(Rect *box) { m_content.left=box->left; m_content.top=box->top; m_content.right=box->right; m_content.bottom=box->bottom; };
+	void setContentBox(double left, double top, double right, double bottom) { m_content.left=left; m_content.top=top; m_content.right=right; m_content.bottom=bottom; };
+
 	int width(void) const { return m_width; };
 	int height(void) const { return m_height; };
 
@@ -40,9 +45,10 @@ private:
 	Image *p_image;
 	double m_left, m_top, m_right, m_bottom;
 	PIX   *p_pix, *p_result;
-	double m_width, m_height;
+	int    m_width, m_height;
 	double m_angle;
 	std::vector<FilterParams*> params;
+	Rect   m_content;
 
 	friend class FilterQueue;
 };

@@ -28,7 +28,7 @@ Enhancer::Enhancer(ImageFiles *files)
 	m_filterQueue.push_back(new FilterDeskew());
 	m_filterQueue.push_back(new FilterBinarize());
 //	m_filterQueue.push_back(new FilterDewarp());
-	m_filterQueue.push_back(new FilterContent());
+//	m_filterQueue.push_back(new FilterContent());
 	m_filterQueue.push_back(new FilterOutput());
 }
 

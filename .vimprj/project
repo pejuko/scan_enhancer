@@ -17,4 +17,30 @@ Scan Enhancer=$INDEXER_PROJECT_ROOT CD=. {
     page.rb
     projection.rb
   }
+
+  src=src/ CD=. filter="*cpp *.h" {
+   filters=filters/ CD=. filter="*.h" {
+    binarize.h
+    content.h
+    contrast.h
+    deskew.h
+    dewarp.h
+    equalize.h
+    normalize.h
+    output.h
+   }
+   enhancer.cpp
+   enhancer.h
+   file.cpp
+   file.h
+   filter.cpp
+   filter.h
+   image.cpp
+   image.h
+   main.cpp
+   Makefile
+   page.cpp
+   page.h
+   rect.h
+  }
 }

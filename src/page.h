@@ -31,6 +31,8 @@ public:
 	void analyse(void);
 	void export_result(std::string fname);
 
+	PIX *getPicture(void) { return p_pix; };
+
 	PIX *getResult(void) { return p_result; };
 	void setResult(PIX *pix) { free_result(); p_result = pix; };
 

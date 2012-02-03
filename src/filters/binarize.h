@@ -26,18 +26,26 @@ namespace ScanEnhancer {
 				pixDestroy(&pt);
 			}
 			pix = pixThresholdToBinary(ppix, p->threshold);
+
+			/*
 			mask = pixGenHalftoneMask(pix, 0, 0, 1);
 			pixInvert(mask, mask);
-			ppix = pixConvertTo32(page->getPicture());
+			//pixWrite("mask.tif", mask, IFF_TIFF);
+			//
+			ppix = pixConvertTo32(page->getResult());
 			PIX *gpix = pixConvertTo32(pix);
 			pixCombineMasked(ppix, gpix, mask);
 
 			pixDestroy(&mask);
 			pixDestroy(&pix);
-			pixDestroy(&pixg);
 			pixDestroy(&gpix);
 
 			page->setResult(ppix);
+			*/
+
+			pixDestroy(&pixg);
+			pixDestroy(&ppix);
+			page->setResult(pix);
 		};
 	};
 }

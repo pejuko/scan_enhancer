@@ -2,6 +2,7 @@
 
 #include "filter.h"
 #include "filters/deskew.h"
+#include "filters/dekeystone.h"
 #include "filters/normalize.h"
 #include "filters/binarize.h"
 #include "filters/dewarp.h"
@@ -9,6 +10,7 @@
 #include "filters/contrast.h"
 #include "filters/content.h"
 #include "filters/output.h"
+#include "filters/borders.h"
 
 #include "enhancer.h"
 
@@ -22,10 +24,12 @@ Enhancer::Enhancer(ImageFiles *files)
 	: p_files(files)
 {
 	p_images = new Images();
-	m_filterQueue.push_back(new FilterNormalize());
+//	m_filterQueue.push_back(new FilterNormalize());
 //	m_filterQueue.push_back(new FilterContrast());
 //	m_filterQueue.push_back(new FilterEqualize());
 	m_filterQueue.push_back(new FilterDeskew());
+//	m_filterQueue.push_back(new FilterDekeystone());
+	m_filterQueue.push_back(new FilterBorders());
 	m_filterQueue.push_back(new FilterBinarize());
 //	m_filterQueue.push_back(new FilterDewarp());
 //	m_filterQueue.push_back(new FilterContent());

@@ -37,8 +37,12 @@ public:
 	void setResult(PIX *pix) { free_result(); p_result = pix; };
 
 	Rect *getContentBox(void) { return &m_content; };
-	void setContentBox(Rect *box) { m_content.left=box->left; m_content.top=box->top; m_content.right=box->right; m_content.bottom=box->bottom; };
-	void setContentBox(double left, double top, double right, double bottom) { m_content.left=left; m_content.top=top; m_content.right=right; m_content.bottom=bottom; };
+	void setContentBox(Rect *box) { m_content.set(*box); };
+	void setContentBox(double left, double top, double right, double bottom) { m_content.set(left, top, right, bottom); };
+
+	Rect *getBorders(void) { return &m_borders; };
+	void setBorders(Rect *box) { m_borders.set(*box); };
+	void setBorders(double left, double top, double right, double bottom) { m_borders.set(left, top, right, bottom); };
 
 	int width(void) const { return m_width; };
 	int height(void) const { return m_height; };
@@ -51,6 +55,7 @@ private:
 	double m_angle;
 	std::vector<FilterParams*> params;
 	Rect   m_content;
+	Rect   m_borders;
 
 	friend class FilterQueue;
 };

@@ -1,3 +1,6 @@
+#ifndef _SCAN_FILTER_CONTRAST_
+#define _SCAN_FILTER_CONTRAST_
+
 #include "../filter.h"
 
 namespace ScanEnhancer {
@@ -20,3 +23,5 @@ namespace ScanEnhancer {
 		};
 	};
 }
+
+#endif

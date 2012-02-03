@@ -21,6 +21,7 @@ Scan Enhancer=$INDEXER_PROJECT_ROOT CD=. {
   src=src/ CD=. filter="*cpp *.h" {
    filters=filters/ CD=. filter="*.h" {
     binarize.h
+    borders.h
     content.h
     contrast.h
     deskew.h
